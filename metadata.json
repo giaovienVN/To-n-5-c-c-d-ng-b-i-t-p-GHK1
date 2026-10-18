@@ -1,0 +1,6 @@
+{
+  "name": "Cầu Thang – Cầu Trượt (Toán Tiểu Học)",
+  "description": "Trò chơi so sánh số thập phân Cầu Thang – Cầu Trượt với chế độ 1 người và 2 người, xúc xắc 3D sinh động và đồng hồ đếm ngược.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

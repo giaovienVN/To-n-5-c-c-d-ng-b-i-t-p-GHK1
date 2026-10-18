@@ -1,0 +1,1812 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cầu Thang – Cầu Trượt (Toán Tiểu Học)</title>
+    <meta name="description" content="Trò chơi so sánh số thập phân và toán tiểu học Cầu Thang – Cầu Trượt với chế độ 1 người và 2 người, xúc xắc 3D sinh động và đồng hồ đếm ngược." />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CDN for standalone browser execution without build tools -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Nunito', 'sans-serif'],
+              display: ['Baloo 2', 'Nunito', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+
+    <style>
+      body {
+        font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: #fffdf7;
+        background-image: 
+          radial-gradient(#fed7aa 0.75px, transparent 0.75px),
+          linear-gradient(to right, rgba(251, 146, 60, 0.05) 1px, transparent 1px);
+        background-size: 24px 24px, 24px 24px;
+      }
+      
+      h1, h2, h3, .font-display {
+        font-family: 'Baloo 2', 'Nunito', cursive, sans-serif;
+      }
+
+      /* 3D Dice roll animation */
+      @keyframes dice-roll-spin {
+        0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1); }
+        25% { transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg) scale(1.15); }
+        50% { transform: rotateX(720deg) rotateY(540deg) rotateZ(270deg) scale(1.2); }
+        75% { transform: rotateX(1080deg) rotateY(720deg) rotateZ(450deg) scale(1.1); }
+        100% { transform: rotateX(1440deg) rotateY(1080deg) rotateZ(720deg) scale(1); }
+      }
+
+      .animate-dice-roll {
+        animation: dice-roll-spin 1.1s cubic-bezier(0.25, 1, 0.5, 1);
+      }
+
+      @keyframes bounce-gentle {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+      }
+
+      .animate-bounce-gentle {
+        animation: bounce-gentle 2s ease-in-out infinite;
+      }
+
+      /* Modal backdrop transition */
+      .modal-backdrop {
+        background-color: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(4px);
+      }
+
+      /* Hide scrollbar */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body class="text-slate-800 antialiased selection:bg-amber-200 min-h-screen flex flex-col items-center justify-between p-2 sm:p-4 md:p-6">
+
+    <!-- CANVAS FOR CONFETTI -->
+    <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full" style="display:none;"></canvas>
+
+    <!-- HEADER SECTION -->
+    <header class="w-full max-w-5xl mx-auto mb-3 bg-white/95 backdrop-blur-sm border-2 border-orange-200 rounded-2xl shadow-sm p-4 sm:p-5 relative transition-all">
+      <div class="flex items-start justify-between gap-4 mb-2">
+        <!-- Top-left: Robot holding Rubik's cube & "Trò chơi" badge -->
+        <div class="flex items-center gap-2.5">
+          <svg class="w-12 h-12 sm:w-14 sm:h-14 drop-shadow hover:scale-105 transition-transform" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="12" r="5" fill="#EF4444" />
+            <line x1="50" y1="17" x2="50" y2="28" stroke="#334155" strokeWidth="4" strokeLinecap="round" />
+            <rect x="20" y="38" width="6" height="12" rx="3" fill="#F97316" />
+            <rect x="74" y="38" width="6" height="12" rx="3" fill="#F97316" />
+            <rect x="25" y="26" width="50" height="36" rx="10" fill="#38BDF8" stroke="#0284C7" strokeWidth="3" />
+            <rect x="32" y="33" width="36" height="22" rx="6" fill="#0F172A" />
+            <circle cx="41" cy="44" r="3.5" fill="#34D399" />
+            <circle cx="59" cy="44" r="3.5" fill="#34D399" />
+            <path d="M44 49 Q50 53 56 49" stroke="#F8FAFC" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            <rect x="30" y="64" width="40" height="28" rx="8" fill="#F1F5F9" stroke="#64748B" strokeWidth="3" />
+            <circle cx="50" cy="76" r="6" fill="#F43F5E" />
+            <path d="M47 76 L53 76 M50 73 L50 79" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M30 68 Q20 74 24 82" stroke="#64748B" strokeWidth="4" strokeLinecap="round" fill="none" />
+            <path d="M70 68 Q78 72 75 80" stroke="#64748B" strokeWidth="4" strokeLinecap="round" fill="none" />
+            <g transform="translate(68, 68) rotate(12)">
+              <rect x="0" y="0" width="18" height="18" rx="3" fill="#1E293B" stroke="#0F172A" strokeWidth="1.5" />
+              <rect x="1.5" y="1.5" width="7" height="7" rx="1" fill="#EF4444" />
+              <rect x="9.5" y="1.5" width="7" height="7" rx="1" fill="#3B82F6" />
+              <rect x="1.5" y="9.5" width="7" height="7" rx="1" fill="#EAB308" />
+              <rect x="9.5" y="9.5" width="7" height="7" rx="1" fill="#22C55E" />
+            </g>
+          </svg>
+
+          <div class="flex flex-col">
+            <span class="inline-block bg-gradient-to-r from-red-600 to-rose-500 text-white font-extrabold text-sm sm:text-base px-3 py-0.5 rounded-full shadow-sm tracking-wide border-2 border-red-400/50">
+              Trò chơi
+            </span>
+            <span class="text-[11px] font-semibold text-slate-500 mt-0.5">Toán Tiểu Học • Vở Bài Tập</span>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button id="btnOpenGuide" class="flex items-center gap-1 text-xs sm:text-sm font-bold bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded-xl border border-amber-300 transition-colors shadow-xs">
+            📖 <span>Bí kíp</span>
+          </button>
+          <button id="btnToggleSound" class="px-2.5 py-1.5 text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-300 transition-colors flex items-center gap-1">
+            <span id="soundIcon">🔊</span> <span class="hidden sm:inline" id="soundText">Bật</span>
+          </button>
+          <button id="btnResetGame" class="px-2.5 py-1.5 text-xs sm:text-sm font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl border border-rose-200 transition-colors flex items-center gap-1">
+            🔄 <span class="hidden sm:inline">Ván mới</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Title: Stylized red-orange -->
+      <div class="text-center my-1">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-wide uppercase bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 bg-clip-text text-transparent drop-shadow-sm select-none py-1">
+          CẦU THANG – CẦU TRƯỢT
+        </h1>
+        <p class="text-xs sm:text-sm text-amber-800 font-semibold mt-0.5 flex items-center justify-center gap-1.5">
+          ✨ Vừa chơi cờ vừa rèn luyện các dạng bài toán tiểu học kì thú! ✨
+        </p>
+      </div>
+
+      <!-- Rules Box with blue bullet dots -->
+      <div class="mt-3 bg-amber-50/70 border border-amber-200/90 rounded-xl p-3 sm:p-4 text-slate-700 text-xs sm:text-sm leading-relaxed">
+        <div class="font-extrabold text-amber-900 text-sm sm:text-base mb-1.5 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span>
+          Cách chơi:
+        </div>
+        <ul class="space-y-1.5 text-slate-700 pl-1">
+          <li class="flex items-start gap-2">
+            <span class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></span>
+            <span><strong class="text-slate-900">Chơi theo cặp đôi</strong> (hoặc đấu với Bạn Robot thông minh).</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></span>
+            <span>Người chơi bắt đầu từ ô xuất phát. Khi đến lượt, người chơi gieo xúc xắc rồi di chuyển số ô bằng số chấm nhận được.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></span>
+            <span><strong class="text-amber-900">Giải thử thách trong ô đó</strong> trong thời gian quy định. Nếu trả lời sai thì phải <span class="text-rose-600 font-semibold underline decoration-rose-300">quay về ô xuất phát trước đó</span>.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></span>
+            <span>Khi đến chân <strong class="text-amber-700">cầu thang tre</strong>, em được leo lên. Khi đến đỉnh <strong class="text-emerald-700">cầu trượt xanh</strong>, em bị trượt xuống. Gặp <strong class="text-pink-600">bông hoa</strong> thì tự vượt qua.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></span>
+            <span>Trò chơi kết thúc khi có người <strong class="text-red-600 font-bold">về đích</strong>.</span>
+          </li>
+        </ul>
+      </div>
+    </header>
+
+    <!-- SPECIAL EVENT BANNER -->
+    <div id="eventBanner" class="w-full max-w-5xl mx-auto mb-2 hidden transition-all duration-300">
+      <div id="eventBannerBox" class="p-3 sm:p-3.5 rounded-2xl font-black text-xs sm:text-sm text-center shadow-md border-2 flex items-center justify-center gap-2">
+        <span id="eventBannerText">Thông báo sự kiện</span>
+      </div>
+    </div>
+
+    <!-- MAIN BOARD CONTAINER -->
+    <main class="w-full flex-1 flex flex-col items-center justify-center">
+      <div class="relative w-full max-w-5xl mx-auto my-1 select-none">
+        <!-- Orange wooden border -->
+        <div class="p-3 sm:p-5 rounded-3xl bg-gradient-to-b from-amber-400 via-orange-400 to-amber-500 shadow-xl border-4 border-amber-600/60 relative">
+          <!-- Inner board paper -->
+          <div class="relative w-full rounded-2xl bg-[#fffdf7] p-2 sm:p-4 border-2 border-orange-200 shadow-inner overflow-hidden">
+            <!-- 20 Cells Grid (4 rows x 5 cols) -->
+            <div id="boardGrid" class="grid grid-cols-5 grid-rows-4 gap-2 sm:gap-3 relative z-10">
+              <!-- Dynamically rendered by JavaScript -->
+            </div>
+
+            <!-- SVG OVERLAY: LADDERS & CHUTE -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none z-15" viewBox="0 0 1000 800" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="bambooGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FBBF24" />
+                  <stop offset="50%" stop-color="#D97706" />
+                  <stop offset="100%" stop-color="#B45309" />
+                </linearGradient>
+                <linearGradient id="slideGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#34D399" />
+                  <stop offset="50%" stop-color="#10B981" />
+                  <stop offset="100%" stop-color="#047857" />
+                </linearGradient>
+                <filter id="softShadow" x="-10%" y="-10%" width="130%" height="130%">
+                  <feDropShadow dx="3" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.25" />
+                </filter>
+              </defs>
+
+              <!-- LADDER 1: Cell 3 (x: 500, y: 700) to Cell 6 (x: 100, y: 500) -->
+              <g filter="url(#softShadow)">
+                <line x1="480" y1="710" x2="110" y2="495" stroke="#92400E" stroke-width="12" stroke-linecap="round" />
+                <line x1="480" y1="710" x2="110" y2="495" stroke="url(#bambooGrad)" stroke-width="8" stroke-linecap="round" />
+                <line x1="510" y1="685" x2="140" y2="470" stroke="#92400E" stroke-width="12" stroke-linecap="round" />
+                <line x1="510" y1="685" x2="140" y2="470" stroke="url(#bambooGrad)" stroke-width="8" stroke-linecap="round" />
+                <!-- Rungs -->
+                <line x1="424" y1="677" x2="454" y2="652" stroke="#78350F" stroke-width="9" stroke-linecap="round" />
+                <line x1="424" y1="677" x2="454" y2="652" stroke="#FDE68A" stroke-width="5" stroke-linecap="round" />
+                <line x1="361" y1="641" x2="391" y2="616" stroke="#78350F" stroke-width="9" stroke-linecap="round" />
+                <line x1="361" y1="641" x2="391" y2="616" stroke="#FDE68A" stroke-width="5" stroke-linecap="round" />
+                <line x1="295" y1="602" x2="325" y2="577" stroke="#78350F" stroke-width="9" stroke-linecap="round" />
+                <line x1="295" y1="602" x2="325" y2="577" stroke="#FDE68A" stroke-width="5" stroke-linecap="round" />
+                <line x1="228" y1="564" x2="258" y2="539" stroke="#78350F" stroke-width="9" stroke-linecap="round" />
+                <line x1="228" y1="564" x2="258" y2="539" stroke="#FDE68A" stroke-width="5" stroke-linecap="round" />
+                <line x1="165" y1="527" x2="195" y2="502" stroke="#78350F" stroke-width="9" stroke-linecap="round" />
+                <line x1="165" y1="527" x2="195" y2="502" stroke="#FDE68A" stroke-width="5" stroke-linecap="round" />
+              </g>
+
+              <!-- LADDER 2: Cell 13 (x: 500, y: 300) to Cell 17 (x: 300, y: 100) -->
+              <g filter="url(#softShadow)">
+                <line x1="485" y1="310" x2="295" y2="95" stroke="#92400E" stroke-width="12" stroke-linecap="round" />
+                <line x1="485" y1="310" x2="295" y2="95" stroke="url(#bambooGrad)" stroke-width="8" stroke-linecap="round" />
+                <line x1="515" y1="285" x2="325" y2="70" stroke="#92400E" stroke-width="12" stroke-linecap="round" />
+                <line x1="515" y1="285" x2="325" y2="70" stroke="url(#bambooGrad)" stroke-width="8" stroke-linecap="round" />
+                <!-- Rungs -->
+                <line x1="447" y1="267" x2="477" y2="242" stroke="#78350F" stroke-width="9" stroke-linecap="round" />
+                <line x1="447" y1="267" x2="477" y2="242" stroke="#FDE68A" stroke-width="5" stroke-linecap="round" />
+                <line x1="409" y1="224" x2="439" y2="199" stroke="#78350F" stroke-width="9" stroke-linecap="round" />
+                <line x1="409" y1="224" x2="439" y2="199" stroke="#FDE68A" stroke-width="5" stroke-linecap="round" />
+                <line x1="371" y1="181" x2="401" y2="156" stroke="#78350F" stroke-width="9" stroke-linecap="round" />
+                <line x1="371" y1="181" x2="401" y2="156" stroke="#FDE68A" stroke-width="5" stroke-linecap="round" />
+                <line x1="333" y1="138" x2="363" y2="113" stroke="#78350F" stroke-width="9" stroke-linecap="round" />
+                <line x1="333" y1="138" x2="363" y2="113" stroke="#FDE68A" stroke-width="5" stroke-linecap="round" />
+              </g>
+
+              <!-- SLIDE 1 (Green Chute): Cell 12 (x: 700, y: 300) to Cell 10 (x: 900, y: 500) -->
+              <g filter="url(#softShadow)">
+                <path d="M 690 300 C 650 370, 780 430, 890 510" fill="none" stroke="#065F46" stroke-width="32" stroke-linecap="round" />
+                <path d="M 690 300 C 650 370, 780 430, 890 510" fill="none" stroke="url(#slideGrad)" stroke-width="24" stroke-linecap="round" />
+                <path d="M 685 295 C 645 365, 775 425, 885 505" fill="none" stroke="#A7F3D0" stroke-width="6" stroke-linecap="round" opacity="0.8" />
+                <circle cx="690" cy="300" r="14" fill="#047857" stroke="#A7F3D0" stroke-width="3" />
+                <path d="M 875 510 Q 900 525 920 520" stroke="#047857" stroke-width="10" fill="none" stroke-linecap="round" />
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTROLS CONTAINER -->
+      <div class="w-full max-w-5xl mx-auto my-3 space-y-3">
+        <!-- TOPIC SELECTOR BAR -->
+        <div class="bg-white/95 rounded-2xl p-3 sm:p-4 border-2 border-orange-200 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+              <span class="text-base sm:text-lg">📚</span>
+              <span class="text-xs sm:text-sm font-black text-amber-950 uppercase tracking-wide">
+                Chọn dạng bài tập toán học:
+              </span>
+            </div>
+            <span id="topicDescription" class="text-[11px] font-semibold text-slate-500">
+              Đang tải dạng bài...
+            </span>
+          </div>
+
+          <div id="topicButtons" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- MAIN DASHBOARD (3 COLS) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+          <!-- Col 1: Modes & Timers -->
+          <div class="bg-white/95 rounded-2xl p-4 border-2 border-orange-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-black text-amber-900 uppercase tracking-wider block mb-2">
+                Chế độ người chơi
+              </span>
+              <div class="grid grid-cols-2 gap-2">
+                <button id="btnModeSingle" class="p-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all bg-amber-500 text-white shadow-sm ring-2 ring-amber-300">
+                  <span>👤 1 Người (vs Robot)</span>
+                </button>
+                <button id="btnModeTwo" class="p-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all bg-blue-50 text-slate-700 hover:bg-blue-100 border border-blue-200">
+                  <span>👥 2 Người (Cặp đôi)</span>
+                </button>
+              </div>
+
+              <!-- Time limit -->
+              <div class="mt-3 pt-3 border-t border-amber-100">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
+                  <span>⏱️ Thời gian trả lời:</span>
+                  <span id="timeLimitLabel" class="font-black text-amber-900">15 giây</span>
+                </div>
+                <div class="grid grid-cols-4 gap-1.5 text-xs font-bold" id="timerOptionButtons">
+                  <button data-time="10" class="py-1 rounded-lg text-center bg-slate-100 hover:bg-amber-100 text-slate-700">10s</button>
+                  <button data-time="15" class="py-1 rounded-lg text-center bg-amber-600 text-white font-black shadow-xs">15s</button>
+                  <button data-time="20" class="py-1 rounded-lg text-center bg-slate-100 hover:bg-amber-100 text-slate-700">20s</button>
+                  <button data-time="0" class="py-1 rounded-lg text-center bg-slate-100 hover:bg-amber-100 text-slate-700">Tắt</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-2 text-xs font-semibold text-slate-600 bg-amber-50/80 p-2 rounded-xl border border-amber-200/60 text-center">
+              💡 <span id="statusMessage">Chào mừng bạn! Hãy gieo xúc xắc để bắt đầu.</span>
+            </div>
+          </div>
+
+          <!-- Col 2: 3D Dice Roll -->
+          <div class="bg-white/95 rounded-2xl p-4 border-2 border-orange-200 shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
+            <div id="playerGlow" class="absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl opacity-20 pointer-events-none bg-red-500"></div>
+
+            <div class="flex items-center gap-2 mb-2">
+              <span id="activePlayerAvatar" class="text-2xl">🧒</span>
+              <div>
+                <div id="activePlayerRole" class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Lượt người chơi</div>
+                <div id="activePlayerName" class="text-base font-black text-red-600">Bé Thông Thái</div>
+              </div>
+            </div>
+
+            <!-- 3D Dice Box -->
+            <div id="diceCube" class="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white via-amber-50 to-orange-100 border-4 border-orange-400 shadow-lg cursor-pointer transition-all flex items-center justify-center hover:scale-105 active:scale-95" title="Bấm để gieo xúc xắc!">
+              <div id="diceFace" class="w-full h-full p-2 flex items-center justify-center">
+                <!-- Dots rendered dynamically -->
+              </div>
+              <div class="absolute top-1 left-2 right-2 h-4 bg-white/60 rounded-full blur-[1px] pointer-events-none"></div>
+              <div id="rollingBadge" class="absolute -bottom-2 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-bounce hidden">
+                Đang lắc...
+              </div>
+            </div>
+
+            <button id="btnRollDice" class="mt-2.5 px-5 py-2 rounded-xl font-extrabold text-sm sm:text-base transition-all shadow-md bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white active:scale-95 cursor-pointer ring-2 ring-orange-300">
+              🎲 Gieo xúc xắc
+            </button>
+
+            <div class="mt-1 text-center">
+              <span id="diceSubtext" class="text-xs font-bold text-amber-800 animate-pulse">Lượt của bạn!</span>
+            </div>
+          </div>
+
+          <!-- Col 3: Scoreboard & Positions -->
+          <div class="bg-white/95 rounded-2xl p-4 border-2 border-orange-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-black text-amber-900 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+                🏆 Bảng theo dõi vị trí
+              </span>
+              <div id="scoreboardList" class="space-y-2">
+                <!-- Dynamically rendered -->
+              </div>
+            </div>
+
+            <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-around text-[11px] font-bold text-slate-600">
+              <span class="text-amber-700">🪜 Thang: Leo lên</span>
+              <span class="text-emerald-700">🛝 Trượt: Xuống</span>
+              <span class="text-pink-600">🌸 Hoa: An toàn</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="w-full max-w-5xl mx-auto mt-3 text-center text-[11px] font-bold text-slate-400 pb-2">
+      Toán Tiểu Học • Trò chơi Cầu Thang – Cầu Trượt • Tệp HTML độc lập 100% không cần cài đặt
+    </footer>
+
+    <!-- QUESTION MODAL -->
+    <div id="questionModal" class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-3 sm:p-4 hidden animate-fade-in">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border-4 border-amber-300 transform transition-all">
+        <!-- Top bar -->
+        <div id="modalHeaderBar" class="p-4 text-white text-center font-extrabold flex items-center justify-between px-5 sm:px-6 bg-gradient-to-r from-red-500 via-orange-500 to-amber-500">
+          <div class="flex items-center gap-2">
+            <span id="modalPlayerAvatar" class="text-2xl">🧒</span>
+            <span id="modalPlayerTitle" class="text-sm sm:text-base tracking-wide font-black">Người chơi • Ô 2</span>
+          </div>
+          <div id="modalTimerBadge" class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-black shadow-xs bg-black/20 text-white">
+            <span>⏱️</span> <span id="modalTimerText">15s</span>
+          </div>
+        </div>
+
+        <!-- Timer bar -->
+        <div class="w-full bg-slate-100 h-2">
+          <div id="modalTimerProgress" class="h-full bg-emerald-500 transition-all duration-1000 linear" style="width: 100%;"></div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-5 sm:p-6 text-center">
+          <div id="modalTopicBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider mb-2 border border-amber-300">
+            ✨ So sánh số thập phân
+          </div>
+
+          <h3 id="modalQuestionPrompt" class="text-lg sm:text-xl md:text-2xl font-black text-slate-800 mb-5 leading-snug">
+            Số nào LỚN HƠN trong hai số dưới đây?
+          </h3>
+
+          <!-- Options Grid -->
+          <div id="modalOptionsGrid" class="grid gap-3 my-2">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- AI Thinking indicator -->
+          <div id="aiThinkingBox" class="mt-4 p-3 bg-sky-50 rounded-xl text-sky-800 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 animate-pulse hidden">
+            <span>⚙️</span> Robot Bé Bi đang suy nghĩ và tính toán...
+          </div>
+
+          <!-- Result Feedback Box -->
+          <div id="modalResultBox" class="mt-4 p-4 rounded-2xl text-left border-2 hidden">
+            <div id="modalResultTitle" class="flex items-center gap-2 font-black text-sm sm:text-base mb-1">
+              Kết quả
+            </div>
+            <div id="modalExplanation" class="text-xs sm:text-sm font-medium mt-1 leading-relaxed bg-white/80 p-2.5 rounded-xl border border-black/5">
+              Giải thích...
+            </div>
+            <div id="modalRuleConsequence" class="mt-2 text-xs font-bold">
+              Hệ quả...
+            </div>
+          </div>
+
+          <!-- Continue Button -->
+          <button id="btnModalContinue" class="mt-4 w-full py-3 px-6 rounded-2xl font-black text-sm sm:text-base text-white shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer hidden bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
+            <span>Tiếp tục</span> ➔
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VICTORY MODAL -->
+    <div id="victoryModal" class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border-4 border-amber-400 text-center p-6 sm:p-8 relative">
+        <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-300 via-yellow-200 to-amber-400 mx-auto flex items-center justify-center shadow-lg border-4 border-amber-500 animate-bounce-gentle text-5xl">
+          🏆
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-black text-amber-900 uppercase tracking-wide font-display mt-3">
+          Chúc mừng chiến thắng!
+        </h2>
+        <div class="my-3 py-2 px-4 rounded-2xl bg-amber-50 border-2 border-amber-200 inline-flex items-center gap-2">
+          <span id="winnerAvatar" class="text-3xl">🧒</span>
+          <span id="winnerName" class="text-lg sm:text-xl font-black text-slate-800">Bé Thông Thái</span>
+          <span class="text-xs bg-red-500 text-white font-extrabold px-2 py-0.5 rounded-full">ĐÃ VỀ ĐÍCH!</span>
+        </div>
+        <p class="text-xs sm:text-sm text-slate-600 mb-5 font-semibold">
+          Xuất sắc hoàn thành đường đua số thập phân và vượt qua mọi thử thách cầu thang, cầu trượt!
+        </p>
+        <button id="btnRematch" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-red-500 via-orange-500 to-amber-500 hover:from-red-600 hover:to-orange-600 text-white font-extrabold text-base shadow-lg cursor-pointer">
+          🔄 Chơi lại ván mới
+        </button>
+      </div>
+    </div>
+
+    <!-- DECIMAL & MATH GUIDE MODAL -->
+    <div id="guideModal" class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-3 sm:p-4 hidden">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border-4 border-amber-300 max-h-[92vh] flex flex-col">
+        <div class="p-4 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white flex items-center justify-between px-5 sm:px-6">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">📖</span>
+            <h3 class="text-base sm:text-xl font-black font-display tracking-wide">
+              Sổ Tay Bí Kíp Toán Tiểu Học
+            </h3>
+          </div>
+          <button id="btnCloseGuide" class="p-1 rounded-full bg-black/10 hover:bg-black/20 text-white cursor-pointer">
+            ✖
+          </button>
+        </div>
+
+        <div id="guideTabsNav" class="flex border-b border-amber-200 bg-amber-50/60 px-3 pt-2 gap-1 overflow-x-auto no-scrollbar">
+          <!-- Populated by JS -->
+        </div>
+
+        <div id="guideTabContent" class="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 text-center flex items-center justify-between px-6">
+          <span class="text-[11px] text-slate-500 font-semibold hidden sm:inline">
+            Kiến thức bám sát chương trình Toán Tiểu Học
+          </span>
+          <button id="btnCloseGuideBottom" class="w-full sm:w-auto py-2 px-6 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-extrabold text-sm shadow-sm cursor-pointer">
+            Đã hiểu bí kíp! Tiếp tục chơi
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+      /* --- WEB AUDIO SOUND SYNTHESIZER --- */
+      class SoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.enabled = true;
+        }
+        init() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        }
+        playClick() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const now = this.ctx.currentTime;
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        }
+        playDiceRoll() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          for (let i = 0; i < 7; i++) {
+            const time = now + i * 0.09 + Math.random() * 0.02;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(220 + Math.random() * 300, time);
+            osc.frequency.exponentialRampToValueAtTime(80, time + 0.04);
+            gain.gain.setValueAtTime(0.2, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(time);
+            osc.stop(time + 0.04);
+          }
+        }
+        playStep() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const now = this.ctx.currentTime;
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(350, now);
+          osc.frequency.exponentialRampToValueAtTime(520, now + 0.06);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.07);
+        }
+        playCorrect() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const notes = [523.25, 659.25, 783.99, 1046.5];
+          const now = this.ctx.currentTime;
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const t = now + idx * 0.09;
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.23);
+          });
+        }
+        playWrong() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(280, now);
+          osc.frequency.exponentialRampToValueAtTime(140, now + 0.35);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        }
+        playLadder() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const notes = [440, 554.37, 659.25, 880, 1108.73];
+          const now = this.ctx.currentTime;
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const t = now + idx * 0.1;
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.2);
+          });
+        }
+        playSlide() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(900, now);
+          osc.frequency.exponentialRampToValueAtTime(180, now + 0.6);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.6);
+        }
+        playFlower() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const notes = [659.25, 880, 1046.5, 1318.51];
+          const now = this.ctx.currentTime;
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const t = now + idx * 0.08;
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(0.18, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.25);
+          });
+        }
+        playTick(isUrgent = false) {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const now = this.ctx.currentTime;
+          const freq = isUrgent ? 880 : 520;
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.exponentialRampToValueAtTime(freq / 2, now + 0.04);
+          gain.gain.setValueAtTime(isUrgent ? 0.2 : 0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.04);
+        }
+        playWin() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const chords = [
+            { notes: [523.25, 659.25, 783.99], t: 0, d: 0.2 },
+            { notes: [523.25, 659.25, 783.99], t: 0.25, d: 0.2 },
+            { notes: [523.25, 659.25, 783.99], t: 0.5, d: 0.2 },
+            { notes: [698.46, 880, 1046.5], t: 0.75, d: 0.6 }
+          ];
+          const now = this.ctx.currentTime;
+          chords.forEach(c => {
+            c.notes.forEach(f => {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(f, now + c.t);
+              gain.gain.setValueAtTime(0.18, now + c.t);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + c.t + c.d);
+              osc.connect(gain);
+              gain.connect(this.ctx.destination);
+              osc.start(now + c.t);
+              osc.stop(now + c.t + c.d);
+            });
+          });
+        }
+      }
+      const sound = new SoundEngine();
+
+      /* --- EMBEDDED CONFETTI ENGINE --- */
+      function launchConfetti() {
+        const canvas = document.getElementById('confettiCanvas');
+        canvas.style.display = 'block';
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+        const particles = [];
+        const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6'];
+
+        for (let i = 0; i < 120; i++) {
+          particles.push({
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: (Math.random() - 0.5) * 16,
+            vy: (Math.random() - 0.7) * 18,
+            size: Math.random() * 8 + 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            vRot: (Math.random() - 0.5) * 10,
+            opacity: 1
+          });
+        }
+
+        let start = Date.now();
+        function animate() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          let alive = false;
+          particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.35; // gravity
+            p.rotation += p.vRot;
+            p.opacity -= 0.008;
+            if (p.opacity > 0) {
+              alive = true;
+              ctx.save();
+              ctx.translate(p.x, p.y);
+              ctx.rotate((p.rotation * Math.PI) / 180);
+              ctx.fillStyle = p.color;
+              ctx.globalAlpha = p.opacity;
+              ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+              ctx.restore();
+            }
+          });
+          if (alive && Date.now() - start < 3500) {
+            requestAnimationFrame(animate);
+          } else {
+            canvas.style.display = 'none';
+          }
+        }
+        animate();
+      }
+
+      /* --- TOPICS & BOARD CELLS DATA --- */
+      const MATH_TOPICS = [
+        { id: 'decimal_compare', name: 'Số thập phân', badge: 'Gốc SGK', icon: '🔢', description: 'So sánh 2 số thập phân ở các hàng phần mười, phần trăm, phần nghìn.' },
+        { id: 'fraction_vs_decimal', name: 'Phân số & Thập phân', badge: 'So sánh', icon: '⚖️', description: 'Chuyển đổi và so sánh giá trị giữa phân số và số thập phân.' },
+        { id: 'unit_conversion', name: 'Đổi đơn vị & Diện tích', badge: 'Đổi đơn vị', icon: '📏', description: 'Đổi các đơn vị độ dài (m, dm, km), khối lượng và diện tích (m², dm², ha).' },
+        { id: 'rounding', name: 'Làm tròn số', badge: 'Làm tròn', icon: '🎯', description: 'Làm tròn số đến số tự nhiên, hàng chục, hàng phần mười, hàng phần trăm.' },
+        { id: 'fraction_arithmetic', name: 'Phép tính phân số', badge: '+, -, ×', icon: '🧮', description: 'Cộng, trừ và nhân 2 phân số, rèn luyện quy đồng và rút gọn mẫu số.' },
+        { id: 'mixed', name: 'Tổng hợp dạng bài', badge: 'Thử thách', icon: '🌟', description: 'Kết hợp ngẫu nhiên tất cả các dạng bài trên giúp rèn luyện toàn diện!' }
+      ];
+
+      const BOARD_CELLS = [
+        { id: 1, gridRow: 3, gridCol: 4, type: 'start', title: 'XUẤT PHÁT' },
+        {
+          id: 2, gridRow: 3, gridCol: 3, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '35,08 / 35,09', prompt: 'Số nào LỚN HƠN trong hai số dưới đây?', options: ['35,08', '35,09'], correct: '35,09', explanation: 'Hai số có phần nguyên bằng nhau (35 = 35), phần mười bằng nhau (0 = 0), hàng phần trăm 9 > 8 nên 35,09 > 35,08.' },
+            fraction_vs_decimal: { cellDisplay: '3/4  và  0,7', prompt: 'Số nào LỚN HƠN: 3/4 hay 0,7?', options: ['3/4', '0,7'], correct: '3/4', explanation: 'Đổi phân số 3/4 = 0,75. So sánh phần mười: 0,75 > 0,70 nên 3/4 > 0,7.' },
+            unit_conversion: { cellDisplay: '3m 4dm = ? m', prompt: '3m 4dm viết dưới dạng số thập phân là:', options: ['3,4 m', '3,04 m', '34 m'], correct: '3,4 m', explanation: 'Vì 1m = 10dm nên 4dm = 0,4m. Do đó 3m 4dm = 3,4 m.' },
+            rounding: { cellDisplay: 'Làm tròn 34,76', prompt: 'Làm tròn số 34,76 đến SỐ TỰ NHIÊN gần nhất:', options: ['34', '35', '34,8'], correct: '35', explanation: 'Chữ số phần mười là 7 (7 ≥ 5), nên ta làm tròn lên: 34 + 1 = 35.' },
+            fraction_arithmetic: { cellDisplay: '1/3 + 2/5', prompt: 'Kết quả của phép tính: 1/3 + 2/5 là:', options: ['11/15', '3/8', '13/15'], correct: '11/15', explanation: 'Quy đồng mẫu số chung là 15: 5/15 + 6/15 = 11/15.' },
+            mixed: { cellDisplay: '3/4  và  0,7', prompt: 'Số nào LỚN HƠN: 3/4 hay 0,7?', options: ['3/4', '0,7'], correct: '3/4', explanation: '3/4 = 0,75 > 0,7.' }
+          }
+        },
+        {
+          id: 3, gridRow: 3, gridCol: 2, type: 'number', ladderTo: 6,
+          questions: {
+            decimal_compare: { cellDisplay: '203,76 / 203,71', prompt: 'Số nào LỚN HƠN trong hai số dưới đây?', options: ['203,76', '203,71'], correct: '203,76', explanation: 'Phần nguyên 203 = 203, phần mười 7 = 7, hàng phần trăm 6 > 1 nên 203,76 > 203,71.' },
+            fraction_vs_decimal: { cellDisplay: '1/2  và  0,55', prompt: 'Số nào LỚN HƠN: 1/2 hay 0,55?', options: ['1/2', '0,55'], correct: '0,55', explanation: '1/2 = 0,50. So sánh phần trăm: 0,55 > 0,50 nên 0,55 > 1/2.' },
+            unit_conversion: { cellDisplay: '5m² 25dm² = ? m²', prompt: '5m² 25dm² bằng bao nhiêu mét vuông (m²)?', options: ['5,25 m²', '5,025 m²', '52,5 m²'], correct: '5,25 m²', explanation: 'Vì 1 m² = 100 dm² nên 25 dm² = 0,25 m². Do đó 5m² 25dm² = 5,25 m².' },
+            rounding: { cellDisplay: 'Làm tròn 12,34', prompt: 'Làm tròn 12,34 đến HÀNG PHẦN MƯỜI (chữ số thập phân thứ nhất):', options: ['12,3', '12,4', '12'], correct: '12,3', explanation: 'Chữ số phần trăm là 4 (4 < 5), nên giữ nguyên hàng phần mười là 12,3.' },
+            fraction_arithmetic: { cellDisplay: '3/4 - 1/2', prompt: 'Kết quả của phép trừ: 3/4 - 1/2 là:', options: ['1/4', '2/2', '1/2'], correct: '1/4', explanation: 'Quy đồng 1/2 = 2/4. Khi đó 3/4 - 2/4 = 1/4.' },
+            mixed: { cellDisplay: '5m² 25dm² = ? m²', prompt: '5m² 25dm² bằng bao nhiêu m²?', options: ['5,25 m²', '5,025 m²', '52,5 m²'], correct: '5,25 m²', explanation: '1 m² = 100 dm² nên 25 dm² = 0,25 m² -> 5,25 m².' }
+          }
+        },
+        {
+          id: 4, gridRow: 3, gridCol: 1, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '215,99 / 217,03', prompt: 'Số nào LỚN HƠN trong hai số dưới đây?', options: ['215,99', '217,03'], correct: '217,03', explanation: 'So sánh phần nguyên: 217 > 215 nên 217,03 > 215,99.' },
+            fraction_vs_decimal: { cellDisplay: '4/5  và  0,79', prompt: 'Số nào LỚN HƠN: 4/5 hay 0,79?', options: ['4/5', '0,79'], correct: '4/5', explanation: '4/5 = 8/10 = 0,80. Vì 0,80 > 0,79 nên 4/5 > 0,79.' },
+            unit_conversion: { cellDisplay: '2km 50m = ? km', prompt: '2km 50m viết dưới dạng số thập phân là:', options: ['2,05 km', '2,5 km', '2,005 km'], correct: '2,05 km', explanation: '1 km = 1000m nên 50m = 0,05km. Do đó 2km 50m = 2,05 km.' },
+            rounding: { cellDisplay: 'Làm tròn 85,2', prompt: 'Làm tròn 85,2 đến HÀNG CHỤC gần nhất:', options: ['80', '90', '85'], correct: '90', explanation: 'Hàng đơn vị là 5 (5 ≥ 5), nên làm tròn lên hàng chục: 80 + 10 = 90.' },
+            fraction_arithmetic: { cellDisplay: '2/3 × 4/5', prompt: 'Tính: 2/3 × 4/5 = ?', options: ['8/15', '6/8', '8/8'], correct: '8/15', explanation: 'Nhân tử với tử và mẫu với mẫu: (2 × 4) / (3 × 5) = 8/15.' },
+            mixed: { cellDisplay: '2/3 × 4/5', prompt: 'Tính: 2/3 × 4/5 = ?', options: ['8/15', '6/8', '8/8'], correct: '8/15', explanation: '(2 × 4) / (3 × 5) = 8/15.' }
+          }
+        },
+        { id: 5, gridRow: 3, gridCol: 0, type: 'flower', title: 'Bông hoa cúc cười' },
+
+        // ROW 2
+        {
+          id: 6, gridRow: 2, gridCol: 0, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '31,27 / 41,72', prompt: 'Số nào LỚN HƠN: 31,27 hay 41,72?', options: ['31,27', '41,72'], correct: '41,72', explanation: 'So sánh phần nguyên: 41 > 31 nên 41,72 > 31,27.' },
+            fraction_vs_decimal: { cellDisplay: '7/10  và  0,69', prompt: 'Số nào LỚN HƠN: 7/10 hay 0,69?', options: ['7/10', '0,69'], correct: '7/10', explanation: '7/10 = 0,70. Vì 0,70 > 0,69 nên 7/10 > 0,69.' },
+            unit_conversion: { cellDisplay: '4 ha = ? m²', prompt: '4 ha bằng bao nhiêu mét vuông (m²)?', options: ['40 000 m²', '4 000 m²', '400 m²'], correct: '40 000 m²', explanation: 'Vì 1 ha = 10 000 m² nên 4 ha = 40 000 m².' },
+            rounding: { cellDisplay: 'Làm tròn 7,865', prompt: 'Làm tròn 7,865 đến HÀNG PHẦN TRĂM:', options: ['7,87', '7,86', '7,9'], correct: '7,87', explanation: 'Hàng phần nghìn là 5 (5 ≥ 5), nên làm tròn lên: 6 + 1 = 7 -> 7,87.' },
+            fraction_arithmetic: { cellDisplay: '1/2 + 3/8', prompt: 'Tính: 1/2 + 3/8 = ?', options: ['7/8', '4/10', '5/8'], correct: '7/8', explanation: 'Quy đồng 1/2 = 4/8. Ta có 4/8 + 3/8 = 7/8.' },
+            mixed: { cellDisplay: 'Làm tròn 7,865', prompt: 'Làm tròn 7,865 đến hàng phần trăm:', options: ['7,87', '7,86', '7,9'], correct: '7,87', explanation: 'Phần nghìn là 5 nên làm tròn lên 7,87.' }
+          }
+        },
+        {
+          id: 7, gridRow: 2, gridCol: 1, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '10,59 / 9,90', prompt: 'Số nào LỚN HƠN: 10,59 hay 9,90?', options: ['10,59', '9,90'], correct: '10,59', explanation: 'So sánh phần nguyên: 10 > 9 nên 10,59 > 9,90.' },
+            fraction_vs_decimal: { cellDisplay: '2/5  và  0,42', prompt: 'Số nào LỚN HƠN: 2/5 hay 0,42?', options: ['2/5', '0,42'], correct: '0,42', explanation: '2/5 = 0,40. Vì 0,42 > 0,40 nên 0,42 > 2/5.' },
+            unit_conversion: { cellDisplay: '15 dm² = ? m²', prompt: '15 dm² bằng bao nhiêu m²?', options: ['0,15 m²', '1,5 m²', '0,015 m²'], correct: '0,15 m²', explanation: '1 m² = 100 dm² nên 15 dm² = 0,15 m².' },
+            rounding: { cellDisplay: 'Làm tròn 59,23', prompt: 'Làm tròn 59,23 đến SỐ TỰ NHIÊN gần nhất:', options: ['59', '60', '59,2'], correct: '59', explanation: 'Chữ số phần mười là 2 (2 < 5), nên giữ nguyên 59.' },
+            fraction_arithmetic: { cellDisplay: '5/6 - 1/3', prompt: 'Tính và rút gọn: 5/6 - 1/3 = ?', options: ['1/2', '4/3', '3/6'], correct: '1/2', explanation: '5/6 - 2/6 = 3/6 = 1/2.' },
+            mixed: { cellDisplay: '2/5  và  0,42', prompt: 'Số nào LỚN HƠN: 2/5 hay 0,42?', options: ['2/5', '0,42'], correct: '0,42', explanation: '2/5 = 0,40 < 0,42.' }
+          }
+        },
+        {
+          id: 8, gridRow: 2, gridCol: 2, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '13,72 / 1,372', prompt: 'Số nào LỚN HƠN: 13,72 hay 1,372?', options: ['13,72', '1,372'], correct: '13,72', explanation: 'So sánh phần nguyên: 13 > 1 nên 13,72 > 1,372.' },
+            fraction_vs_decimal: { cellDisplay: '1/4  và  0,2', prompt: 'Số nào LỚN HƠN: 1/4 hay 0,2?', options: ['1/4', '0,2'], correct: '1/4', explanation: '1/4 = 0,25. Vì 0,25 > 0,20 nên 1/4 > 0,2.' },
+            unit_conversion: { cellDisplay: '8 tấn 50kg = ? tấn', prompt: '8 tấn 50kg viết dưới dạng số thập phân là:', options: ['8,05 tấn', '8,5 tấn', '8,005 tấn'], correct: '8,05 tấn', explanation: '50kg = 0,05 tấn. Kết quả là 8,05 tấn.' },
+            rounding: { cellDisplay: 'Làm tròn 43,681', prompt: 'Làm tròn 43,681 đến HÀNG PHẦN MƯỜI:', options: ['43,7', '43,6', '44'], correct: '43,7', explanation: 'Hàng phần trăm là 8 (8 ≥ 5) nên làm tròn lên 43,7.' },
+            fraction_arithmetic: { cellDisplay: '3/5 × 5/7', prompt: 'Tính: 3/5 × 5/7 = ?', options: ['3/7', '15/35', '8/12'], correct: '3/7', explanation: 'Rút gọn 5 với 5, ta còn lại kết quả 3/7.' },
+            mixed: { cellDisplay: '8 tấn 50kg = ? tấn', prompt: '8 tấn 50kg = ... tấn?', options: ['8,05 tấn', '8,5 tấn', '8,005 tấn'], correct: '8,05 tấn', explanation: '50kg = 0,05 tấn -> 8,05 tấn.' }
+          }
+        },
+        {
+          id: 9, gridRow: 2, gridCol: 3, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '10,82 / 108,2', prompt: 'Số nào LỚN HƠN: 10,82 hay 108,2?', options: ['10,82', '108,2'], correct: '108,2', explanation: 'So sánh phần nguyên: 108 > 10 nên 108,2 > 10,82.' },
+            fraction_vs_decimal: { cellDisplay: '3/5  và  0,65', prompt: 'Số nào LỚN HƠN: 3/5 hay 0,65?', options: ['3/5', '0,65'], correct: '0,65', explanation: '3/5 = 0,60. Vì 0,65 > 0,60 nên 0,65 > 3/5.' },
+            unit_conversion: { cellDisplay: '7m² 8dm² = ? m²', prompt: '7m² 8dm² bằng bao nhiêu mét vuông (m²)?', options: ['7,08 m²', '7,8 m²', '78 m²'], correct: '7,08 m²', explanation: '8dm² = 0,08 m². Vậy 7m² 8dm² = 7,08 m².' },
+            rounding: { cellDisplay: 'Làm tròn 148,6', prompt: 'Làm tròn 148,6 đến HÀNG CHỤC gần nhất:', options: ['150', '140', '149'], correct: '150', explanation: 'Hàng đơn vị là 8 (8 ≥ 5), nên làm tròn lên 150.' },
+            fraction_arithmetic: { cellDisplay: '2/7 + 3/7', prompt: 'Tính: 2/7 + 3/7 = ?', options: ['5/7', '5/14', '6/7'], correct: '5/7', explanation: 'Cộng hai phân số cùng mẫu: (2 + 3)/7 = 5/7.' },
+            mixed: { cellDisplay: 'Làm tròn 148,6', prompt: 'Làm tròn 148,6 đến hàng chục:', options: ['150', '140', '149'], correct: '150', explanation: 'Làm tròn lên 150.' }
+          }
+        },
+        {
+          id: 10, gridRow: 2, gridCol: 4, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '899,9 / 900,01', prompt: 'Số nào LỚN HƠN: 899,9 hay 900,01?', options: ['899,9', '900,01'], correct: '900,01', explanation: 'So sánh phần nguyên: 900 > 899 nên 900,01 > 899,9.' },
+            fraction_vs_decimal: { cellDisplay: '9/10  và  0,88', prompt: 'Số nào LỚN HƠN: 9/10 hay 0,88?', options: ['9/10', '0,88'], correct: '9/10', explanation: '9/10 = 0,90 > 0,88 nên 9/10 > 0,88.' },
+            unit_conversion: { cellDisplay: '125 cm = ? m', prompt: '125 cm bằng bao nhiêu mét (m)?', options: ['1,25 m', '12,5 m', '0,125 m'], correct: '1,25 m', explanation: '1m = 100cm nên 125cm = 1,25 m.' },
+            rounding: { cellDisplay: 'Làm tròn 9,49', prompt: 'Làm tròn số 9,49 đến SỐ TỰ NHIÊN gần nhất:', options: ['9', '10', '9,5'], correct: '9', explanation: 'Chữ số phần mười là 4 (4 < 5) nên làm tròn xuống là 9.' },
+            fraction_arithmetic: { cellDisplay: '7/8 - 3/8', prompt: 'Tính và rút gọn: 7/8 - 3/8 = ?', options: ['1/2', '4/8', '4/0'], correct: '1/2', explanation: '7/8 - 3/8 = 4/8 = 1/2.' },
+            mixed: { cellDisplay: '7/8 - 3/8', prompt: 'Tính và rút gọn: 7/8 - 3/8 = ?', options: ['1/2', '4/8', '4/0'], correct: '1/2', explanation: '4/8 rút gọn thành 1/2.' }
+          }
+        },
+
+        // ROW 3
+        {
+          id: 11, gridRow: 1, gridCol: 4, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '10,1 / 9,99', prompt: 'Số nào LỚN HƠN: 10,1 hay 9,99?', options: ['10,1', '9,99'], correct: '10,1', explanation: 'Phần nguyên 10 > 9 nên 10,1 > 9,99.' },
+            fraction_vs_decimal: { cellDisplay: '5/4  và  1,3', prompt: 'Số nào LỚN HƠN: 5/4 hay 1,3?', options: ['5/4', '1,3'], correct: '1,3', explanation: '5/4 = 1,25 < 1,30 nên 1,3 > 5/4.' },
+            unit_conversion: { cellDisplay: '3dm² 45cm² = ? dm²', prompt: '3dm² 45cm² bằng bao nhiêu dm²?', options: ['3,45 dm²', '34,5 dm²', '3,045 dm²'], correct: '3,45 dm²', explanation: '45cm² = 0,45 dm² nên kết quả là 3,45 dm².' },
+            rounding: { cellDisplay: 'Làm tròn 0,876', prompt: 'Làm tròn số 0,876 đến HÀNG PHẦN TRĂM:', options: ['0,88', '0,87', '0,9'], correct: '0,88', explanation: 'Hàng phần nghìn là 6 (6 ≥ 5) nên làm tròn lên 0,88.' },
+            fraction_arithmetic: { cellDisplay: '1/4 × 2/3', prompt: 'Tính và rút gọn: 1/4 × 2/3 = ?', options: ['1/6', '2/12', '3/7'], correct: '1/6', explanation: '1/4 × 2/3 = 2/12 = 1/6.' },
+            mixed: { cellDisplay: '5/4  và  1,3', prompt: 'Số nào LỚN HƠN: 5/4 hay 1,3?', options: ['5/4', '1,3'], correct: '1,3', explanation: '5/4 = 1,25 < 1,3.' }
+          }
+        },
+        {
+          id: 12, gridRow: 1, gridCol: 3, type: 'number', slideTo: 10,
+          questions: {
+            decimal_compare: { cellDisplay: '100,02 / 100,01', prompt: 'Số nào LỚN HƠN: 100,02 hay 100,01?', options: ['100,02', '100,01'], correct: '100,02', explanation: 'Phần trăm 2 > 1 nên 100,02 > 100,01.' },
+            fraction_vs_decimal: { cellDisplay: '3/2  và  1,48', prompt: 'Số nào LỚN HƠN: 3/2 hay 1,48?', options: ['3/2', '1,48'], correct: '3/2', explanation: '3/2 = 1,50 > 1,48 nên 3/2 > 1,48.' },
+            unit_conversion: { cellDisplay: '0,5 ha = ? m²', prompt: '0,5 ha bằng bao nhiêu mét vuông (m²)?', options: ['5 000 m²', '500 m²', '50 000 m²'], correct: '5 000 m²', explanation: '1 ha = 10 000 m² nên 0,5 ha = 5 000 m².' },
+            rounding: { cellDisplay: 'Làm tròn 264', prompt: 'Làm tròn 264 đến HÀNG CHỤC gần nhất:', options: ['260', '270', '300'], correct: '260', explanation: 'Hàng đơn vị là 4 (4 < 5) nên làm tròn xuống 260.' },
+            fraction_arithmetic: { cellDisplay: '2/5 + 1/3', prompt: 'Tính: 2/5 + 1/3 = ?', options: ['11/15', '3/8', '7/15'], correct: '11/15', explanation: '6/15 + 5/15 = 11/15.' },
+            mixed: { cellDisplay: '0,5 ha = ? m²', prompt: '0,5 ha bằng bao nhiêu m²?', options: ['5 000 m²', '500 m²', '50 000 m²'], correct: '5 000 m²', explanation: '0,5 ha = 5 000 m².' }
+          }
+        },
+        {
+          id: 13, gridRow: 1, gridCol: 2, type: 'number', ladderTo: 17,
+          questions: {
+            decimal_compare: { cellDisplay: '3,74 / 3,81', prompt: 'Số nào LỚN HƠN: 3,74 hay 3,81?', options: ['3,74', '3,81'], correct: '3,81', explanation: 'Hàng phần mười có 8 > 7 nên 3,81 > 3,74.' },
+            fraction_vs_decimal: { cellDisplay: '1/8  và  0,15', prompt: 'Số nào LỚN HƠN: 1/8 hay 0,15?', options: ['1/8', '0,15'], correct: '0,15', explanation: '1/8 = 0,125 < 0,150 nên 0,15 > 1/8.' },
+            unit_conversion: { cellDisplay: '4m 7cm = ? m', prompt: '4m 7cm viết dưới dạng số thập phân là:', options: ['4,07 m', '4,7 m', '47 m'], correct: '4,07 m', explanation: '7cm = 0,07m nên 4m 7cm = 4,07 m.' },
+            rounding: { cellDisplay: 'Làm tròn 15,92', prompt: 'Làm tròn 15,92 đến HÀNG PHẦN MƯỜI:', options: ['15,9', '16,0', '15'], correct: '15,9', explanation: 'Phần trăm là 2 (< 5) nên giữ nguyên 15,9.' },
+            fraction_arithmetic: { cellDisplay: '4/5 - 3/10', prompt: 'Tính và rút gọn: 4/5 - 3/10 = ?', options: ['1/2', '5/10', '1/5'], correct: '1/2', explanation: '8/10 - 3/10 = 5/10 = 1/2.' },
+            mixed: { cellDisplay: '4/5 - 3/10', prompt: 'Tính: 4/5 - 3/10 = ?', options: ['1/2', '5/10', '1/5'], correct: '1/2', explanation: '8/10 - 3/10 = 5/10 = 1/2.' }
+          }
+        },
+        {
+          id: 14, gridRow: 1, gridCol: 1, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '15,09 / 14,90', prompt: 'Số nào LỚN HƠN: 15,09 hay 14,90?', options: ['15,09', '14,90'], correct: '15,09', explanation: 'Phần nguyên 15 > 14 nên 15,09 > 14,90.' },
+            fraction_vs_decimal: { cellDisplay: '5/8  và  0,6', prompt: 'Số nào LỚN HƠN: 5/8 hay 0,6?', options: ['5/8', '0,6'], correct: '5/8', explanation: '5/8 = 0,625 > 0,600 nên 5/8 > 0,6.' },
+            unit_conversion: { cellDisplay: '9m² 5dm² = ? m²', prompt: '9m² 5dm² bằng bao nhiêu m²?', options: ['9,05 m²', '9,5 m²', '95 m²'], correct: '9,05 m²', explanation: '5dm² = 0,05 m² nên 9m² 5dm² = 9,05 m².' },
+            rounding: { cellDisplay: 'Làm tròn 99,6', prompt: 'Làm tròn 99,6 đến SỐ TỰ NHIÊN gần nhất:', options: ['100', '99', '99,5'], correct: '100', explanation: 'Phần mười là 6 (≥ 5) nên làm tròn lên 100.' },
+            fraction_arithmetic: { cellDisplay: '3/4 × 2/5', prompt: 'Tính và rút gọn: 3/4 × 2/5 = ?', options: ['3/10', '6/20', '5/9'], correct: '3/10', explanation: '3/4 × 2/5 = 6/20 = 3/10.' },
+            mixed: { cellDisplay: 'Làm tròn 99,6', prompt: 'Làm tròn 99,6 đến số tự nhiên:', options: ['100', '99', '99,5'], correct: '100', explanation: 'Làm tròn lên 100.' }
+          }
+        },
+        {
+          id: 15, gridRow: 1, gridCol: 0, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '13,72 / 14,27', prompt: 'Số nào LỚN HƠN: 13,72 hay 14,27?', options: ['13,72', '14,27'], correct: '14,27', explanation: 'Phần nguyên 14 > 13 nên 14,27 > 13,72.' },
+            fraction_vs_decimal: { cellDisplay: '7/5  và  1,39', prompt: 'Số nào LỚN HƠN: 7/5 hay 1,39?', options: ['7/5', '1,39'], correct: '7/5', explanation: '7/5 = 1,40 > 1,39 nên 7/5 > 1,39.' },
+            unit_conversion: { cellDisplay: '3500 m² = ? ha', prompt: '3500 m² bằng bao nhiêu héc-ta (ha)?', options: ['0,35 ha', '3,5 ha', '0,035 ha'], correct: '0,35 ha', explanation: '1 ha = 10 000 m² nên 3500 m² = 0,35 ha.' },
+            rounding: { cellDisplay: 'Làm tròn 4,125', prompt: 'Làm tròn 4,125 đến HÀNG PHẦN TRĂM:', options: ['4,13', '4,12', '4,1'], correct: '4,13', explanation: 'Phần nghìn là 5 (≥ 5) nên làm tròn lên 4,13.' },
+            fraction_arithmetic: { cellDisplay: '1/6 + 2/3', prompt: 'Tính: 1/6 + 2/3 = ?', options: ['5/6', '3/9', '1/2'], correct: '5/6', explanation: '1/6 + 4/6 = 5/6.' },
+            mixed: { cellDisplay: '3500 m² = ? ha', prompt: '3500 m² bằng bao nhiêu ha?', options: ['0,35 ha', '3,5 ha', '0,035 ha'], correct: '0,35 ha', explanation: '3500 / 10 000 = 0,35 ha.' }
+          }
+        },
+
+        // ROW 4
+        { id: 16, gridRow: 0, gridCol: 0, type: 'flower', title: 'Bông hoa cúc cười' },
+        {
+          id: 17, gridRow: 0, gridCol: 1, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '721,8 / 712,9', prompt: 'Số nào LỚN HƠN: 721,8 hay 712,9?', options: ['721,8', '712,9'], correct: '721,8', explanation: 'Phần nguyên 721 > 712 nên 721,8 > 712,9.' },
+            fraction_vs_decimal: { cellDisplay: '11/10  và  1,09', prompt: 'Số nào LỚN HƠN: 11/10 hay 1,09?', options: ['11/10', '1,09'], correct: '11/10', explanation: '11/10 = 1,10 > 1,09 nên 11/10 > 1,09.' },
+            unit_conversion: { cellDisplay: '6 km² = ? ha', prompt: '6 km² bằng bao nhiêu héc-ta (ha)?', options: ['600 ha', '60 ha', '6 000 ha'], correct: '600 ha', explanation: '1 km² = 100 ha nên 6 km² = 600 ha.' },
+            rounding: { cellDisplay: 'Làm tròn 728', prompt: 'Làm tròn 728 đến HÀNG CHỤC gần nhất:', options: ['730', '720', '700'], correct: '730', explanation: 'Hàng đơn vị là 8 (≥ 5) nên làm tròn lên 730.' },
+            fraction_arithmetic: { cellDisplay: '9/10 - 2/5', prompt: 'Tính và rút gọn: 9/10 - 2/5 = ?', options: ['1/2', '5/10', '7/5'], correct: '1/2', explanation: '9/10 - 4/10 = 5/10 = 1/2.' },
+            mixed: { cellDisplay: '6 km² = ? ha', prompt: '6 km² bằng bao nhiêu ha?', options: ['600 ha', '60 ha', '6 000 ha'], correct: '600 ha', explanation: '6 × 100 = 600 ha.' }
+          }
+        },
+        {
+          id: 18, gridRow: 0, gridCol: 2, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '46,258 / 46,52', prompt: 'Số nào LỚN HƠN: 46,258 hay 46,52?', options: ['46,258', '46,52'], correct: '46,52', explanation: 'Hàng phần mười 5 > 2 nên 46,52 > 46,258.' },
+            fraction_vs_decimal: { cellDisplay: '1/5  và  0,25', prompt: 'Số nào LỚN HƠN: 1/5 hay 0,25?', options: ['1/5', '0,25'], correct: '0,25', explanation: '1/5 = 0,20 < 0,25 nên 0,25 > 1/5.' },
+            unit_conversion: { cellDisplay: '2m² 75dm² = ? m²', prompt: '2m² 75dm² bằng bao nhiêu m²?', options: ['2,75 m²', '27,5 m²', '2,075 m²'], correct: '2,75 m²', explanation: '75dm² = 0,75 m² nên 2m² 75dm² = 2,75 m².' },
+            rounding: { cellDisplay: 'Làm tròn 46,528', prompt: 'Làm tròn 46,528 đến HÀNG PHẦN MƯỜI:', options: ['46,5', '46,6', '47'], correct: '46,5', explanation: 'Hàng phần trăm là 2 (< 5) nên giữ nguyên 46,5.' },
+            fraction_arithmetic: { cellDisplay: '5/8 × 4/5', prompt: 'Tính và rút gọn: 5/8 × 4/5 = ?', options: ['1/2', '20/40', '4/8'], correct: '1/2', explanation: '5/8 × 4/5 = 20/40 = 1/2.' },
+            mixed: { cellDisplay: '5/8 × 4/5', prompt: 'Tính và rút gọn: 5/8 × 4/5 = ?', options: ['1/2', '20/40', '4/8'], correct: '1/2', explanation: '5/8 × 4/5 = 1/2.' }
+          }
+        },
+        {
+          id: 19, gridRow: 0, gridCol: 3, type: 'number',
+          questions: {
+            decimal_compare: { cellDisplay: '17,98 / 20,12', prompt: 'Số nào LỚN HƠN: 17,98 hay 20,12?', options: ['17,98', '20,12'], correct: '20,12', explanation: 'Phần nguyên 20 > 17 nên 20,12 > 17,98.' },
+            fraction_vs_decimal: { cellDisplay: '6/5  và  1,19', prompt: 'Số nào LỚN HƠN: 6/5 hay 1,19?', options: ['6/5', '1,19'], correct: '6/5', explanation: '6/5 = 1,20 > 1,19 nên 6/5 > 1,19.' },
+            unit_conversion: { cellDisplay: '4 tạ 5kg = ? tạ', prompt: '4 tạ 5kg viết dưới dạng số thập phân là:', options: ['4,05 tạ', '4,5 tạ', '45 tạ'], correct: '4,05 tạ', explanation: '1 tạ = 100kg nên 5kg = 0,05 tạ -> 4,05 tạ.' },
+            rounding: { cellDisplay: 'Làm tròn 19,81', prompt: 'Làm tròn số 19,81 đến SỐ TỰ NHIÊN gần nhất:', options: ['20', '19', '19,8'], correct: '20', explanation: 'Phần mười là 8 (≥ 5) nên làm tròn lên 20.' },
+            fraction_arithmetic: { cellDisplay: '1/2 + 1/3', prompt: 'Kết quả của 1/2 + 1/3 là:', options: ['5/6', '2/5', '1/5'], correct: '5/6', explanation: '3/6 + 2/6 = 5/6.' },
+            mixed: { cellDisplay: 'Làm tròn 19,81', prompt: 'Làm tròn 19,81 đến số tự nhiên:', options: ['20', '19', '19,8'], correct: '20', explanation: 'Phần mười là 8 nên làm tròn lên 20.' }
+          }
+        },
+        { id: 20, gridRow: 0, gridCol: 4, type: 'finish', title: 'ĐÍCH' }
+      ];
+
+      /* --- GAME STATE --- */
+      const state = {
+        mode: 'single', // 'single' or 'two_players'
+        topic: 'decimal_compare',
+        timeLimit: 15,
+        soundEnabled: true,
+        activePlayerId: 1,
+        turnPhase: 'waiting_for_roll', // 'waiting_for_roll', 'rolling', 'moving', 'answering', 'game_over'
+        diceValue: 1,
+        isRolling: false,
+        timerRemaining: 15,
+        timerInterval: null,
+        currentQuestionCell: null,
+        currentQuestionData: null,
+        players: [
+          { id: 1, name: 'Bé Thông Thái', isAI: false, avatar: '🧒', color: 'red', position: 1, prevPosition: 1, correct: 0, wrong: 0, ladders: 0, slides: 0 },
+          { id: 2, name: 'Robot Bé Bi', isAI: true, avatar: '🤖', color: 'blue', position: 1, prevPosition: 1, correct: 0, wrong: 0, ladders: 0, slides: 0 }
+        ]
+      };
+
+      /* --- RENDER FUNCTIONS --- */
+      function renderTopicButtons() {
+        const container = document.getElementById('topicButtons');
+        container.innerHTML = '';
+        MATH_TOPICS.forEach(t => {
+          const isSelected = state.topic === t.id;
+          const btn = document.createElement('button');
+          btn.className = `p-2 rounded-xl text-left transition-all duration-200 flex flex-col justify-between cursor-pointer border ${
+            isSelected
+              ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white border-amber-600 shadow-md ring-2 ring-amber-300 scale-[1.02]'
+              : 'bg-amber-50/70 hover:bg-amber-100 text-slate-800 border-amber-200/80 hover:border-amber-300'
+          }`;
+          btn.innerHTML = `
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-base">${t.icon}</span>
+              <span class="text-[9px] font-black px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/30 text-white' : 'bg-amber-200/80 text-amber-900'}">${t.badge}</span>
+            </div>
+            <div class="text-[11px] sm:text-xs font-black leading-tight line-clamp-1">${t.name}</div>
+          `;
+          btn.onclick = () => {
+            sound.playClick();
+            state.topic = t.id;
+            document.getElementById('topicDescription').textContent = t.description;
+            showEventBanner(`✨ Đã chuyển sang dạng bài: ${t.name}!`, 'correct');
+            renderTopicButtons();
+            renderBoard();
+          };
+          container.appendChild(btn);
+        });
+        const activeT = MATH_TOPICS.find(t => t.id === state.topic);
+        if (activeT) document.getElementById('topicDescription').textContent = activeT.description;
+      }
+
+      function getCellQuestion(cell) {
+        if (!cell || !cell.questions) return null;
+        return cell.questions[state.topic] || cell.questions['decimal_compare'];
+      }
+
+      function renderBoard() {
+        const container = document.getElementById('boardGrid');
+        container.innerHTML = '';
+
+        // 4 rows x 5 cols
+        const gridCells = [
+          [null, null, null, null, null],
+          [null, null, null, null, null],
+          [null, null, null, null, null],
+          [null, null, null, null, null]
+        ];
+
+        BOARD_CELLS.forEach(c => {
+          gridCells[c.gridRow][c.gridCol] = c;
+        });
+
+        for (let r = 0; r < 4; r++) {
+          for (let c = 0; c < 5; c++) {
+            const cell = gridCells[r][c];
+            const cellDiv = document.createElement('div');
+
+            const cellPlayers = state.players.filter(p => p.position === cell.id);
+            const isActiveCell = state.players.find(p => p.id === state.activePlayerId)?.position === cell.id;
+
+            let bgBorder = 'bg-white/95 border-amber-200/90 shadow-xs';
+            if (cell.type === 'start') bgBorder = 'bg-rose-50/90 border-red-400 shadow-sm';
+            else if (cell.type === 'finish') bgBorder = 'bg-gradient-to-br from-amber-100 to-orange-100 border-amber-500 shadow-md ring-2 ring-amber-300/60';
+            else if (cell.type === 'flower') bgBorder = 'bg-pink-50/90 border-pink-300 shadow-xs';
+
+            cellDiv.className = `relative aspect-[1/0.95] sm:aspect-square rounded-xl sm:rounded-2xl transition-all duration-300 flex flex-col justify-between p-1.5 sm:p-2 border-2 ${bgBorder} ${isActiveCell ? 'ring-4 ring-amber-400 scale-[1.03] z-20 shadow-lg' : ''}`;
+
+            // Top: number badge
+            let topHtml = `
+              <div class="flex items-center justify-between w-full">
+                <span class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-100/90 text-amber-900 text-[10px] sm:text-xs font-black shadow-2xs">
+                  ${cell.id}
+                </span>
+              </div>
+            `;
+
+            // Body
+            let bodyHtml = '';
+            if (cell.type === 'start') {
+              bodyHtml = `
+                <div class="flex flex-col items-center justify-center">
+                  <span class="font-display font-black text-xs sm:text-base md:text-lg text-red-600 tracking-wider">XUẤT PHÁT</span>
+                  <span class="text-[10px] text-red-500 font-bold hidden sm:inline">⬅ Sang ô 2</span>
+                </div>
+              `;
+            } else if (cell.type === 'finish') {
+              bodyHtml = `
+                <div class="flex flex-col items-center justify-center">
+                  <span class="text-sm sm:text-base">🚩✨</span>
+                  <span class="font-display font-black text-sm sm:text-lg md:text-xl text-red-600 tracking-wider">ĐÍCH</span>
+                </div>
+              `;
+            } else if (cell.type === 'flower') {
+              bodyHtml = `
+                <div class="flex flex-col items-center justify-center animate-bounce-gentle" title="Bông hoa cúc cười - Tự vượt qua!">
+                  <svg class="w-7 h-7 sm:w-10 sm:h-10 text-pink-400" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="20" r="14" fill="#F472B6" />
+                    <circle cx="50" cy="80" r="14" fill="#F472B6" />
+                    <circle cx="20" cy="50" r="14" fill="#F472B6" />
+                    <circle cx="80" cy="50" r="14" fill="#F472B6" />
+                    <circle cx="28" cy="28" r="14" fill="#FBCFE8" />
+                    <circle cx="72" cy="28" r="14" fill="#FBCFE8" />
+                    <circle cx="28" cy="72" r="14" fill="#FBCFE8" />
+                    <circle cx="72" cy="72" r="14" fill="#FBCFE8" />
+                    <circle cx="50" cy="50" r="22" fill="#FBBF24" stroke="#F59E0B" strokeWidth="3" />
+                    <circle cx="43" cy="45" r="3" fill="#1E293B" />
+                    <circle cx="57" cy="45" r="3" fill="#1E293B" />
+                    <ellipse cx="38" cy="53" rx="3" ry="1.5" fill="#F43F5E" opacity="0.6" />
+                    <ellipse cx="62" cy="53" rx="3" ry="1.5" fill="#F43F5E" opacity="0.6" />
+                    <path d="M43 53 Q50 61 57 53" stroke="#1E293B" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                  </svg>
+                  <span class="text-[9px] sm:text-[11px] font-bold text-pink-700 hidden xs:inline">Tự vượt qua</span>
+                </div>
+              `;
+            } else if (cell.type === 'number') {
+              const q = getCellQuestion(cell);
+              let ladderBadge = cell.ladderTo ? `<span class="mt-0.5 px-1.5 py-0.2 bg-amber-100 text-amber-800 text-[9px] font-black rounded border border-amber-300">🪜 Lên ô ${cell.ladderTo}</span>` : '';
+              let slideBadge = cell.slideTo ? `<span class="mt-0.5 px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[9px] font-black rounded border border-emerald-300">🛝 Xuống ô ${cell.slideTo}</span>` : '';
+
+              bodyHtml = `
+                <div class="flex flex-col items-center justify-center w-full px-1">
+                  <div class="font-display font-black text-slate-900 text-[11px] sm:text-sm md:text-base leading-tight tracking-tight text-center">
+                    ${q ? q.cellDisplay : ''}
+                  </div>
+                  ${ladderBadge}
+                  ${slideBadge}
+                </div>
+              `;
+            }
+
+            // Bottom: tokens
+            let tokensHtml = '<div class="h-5 sm:h-7 w-full flex items-center justify-center gap-1 z-20">';
+            cellPlayers.forEach(p => {
+              const isPActive = p.id === state.activePlayerId;
+              const colorClass = p.color === 'red' ? 'bg-gradient-to-r from-red-500 to-rose-600 ring-red-400' : 'bg-gradient-to-r from-blue-500 to-cyan-600 ring-blue-400';
+              tokensHtml += `
+                <div class="flex items-center justify-center rounded-full text-white border-2 border-white ring-2 shadow-md px-1.5 py-0.5 ${colorClass} ${isPActive ? 'animate-bounce-gentle scale-110 z-30' : 'opacity-90'}">
+                  <span class="text-xs sm:text-sm">${p.avatar}</span>
+                  <span class="text-[10px] font-black hidden md:inline ml-0.5">${p.id === 1 ? 'P1' : 'P2'}</span>
+                </div>
+              `;
+            });
+            tokensHtml += '</div>';
+
+            cellDiv.innerHTML = topHtml + `<div class="flex-1 flex flex-col items-center justify-center my-0.5">${bodyHtml}</div>` + tokensHtml;
+            container.appendChild(cellDiv);
+          }
+        }
+      }
+
+      function renderDice(value) {
+        const face = document.getElementById('diceFace');
+        face.innerHTML = '';
+        if (value === 1) {
+          face.innerHTML = `<span class="w-6 h-6 rounded-full bg-red-600 shadow-inner"></span>`;
+        } else if (value === 2) {
+          face.innerHTML = `
+            <div class="w-full h-full flex justify-between p-3">
+              <span class="w-4 h-4 rounded-full bg-slate-800 shadow-inner"></span>
+              <span class="w-4 h-4 rounded-full bg-slate-800 shadow-inner self-end"></span>
+            </div>
+          `;
+        } else if (value === 3) {
+          face.innerHTML = `
+            <div class="w-full h-full flex justify-between p-3">
+              <span class="w-4 h-4 rounded-full bg-slate-800 shadow-inner"></span>
+              <span class="w-4 h-4 rounded-full bg-slate-800 shadow-inner self-center"></span>
+              <span class="w-4 h-4 rounded-full bg-slate-800 shadow-inner self-end"></span>
+            </div>
+          `;
+        } else if (value === 4) {
+          face.innerHTML = `
+            <div class="w-full h-full grid grid-cols-2 p-2.5 gap-2 content-between">
+              <span class="w-4 h-4 rounded-full bg-red-500 shadow-inner"></span>
+              <span class="w-4 h-4 rounded-full bg-red-500 shadow-inner justify-self-end"></span>
+              <span class="w-4 h-4 rounded-full bg-red-500 shadow-inner"></span>
+              <span class="w-4 h-4 rounded-full bg-red-500 shadow-inner justify-self-end"></span>
+            </div>
+          `;
+        } else if (value === 5) {
+          face.innerHTML = `
+            <div class="w-full h-full relative p-2.5">
+              <div class="flex justify-between">
+                <span class="w-3.5 h-3.5 rounded-full bg-slate-800 shadow-inner"></span>
+                <span class="w-3.5 h-3.5 rounded-full bg-slate-800 shadow-inner"></span>
+              </div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="w-4 h-4 rounded-full bg-red-600 shadow-inner"></span>
+              </div>
+              <div class="flex justify-between absolute bottom-2.5 left-2.5 right-2.5">
+                <span class="w-3.5 h-3.5 rounded-full bg-slate-800 shadow-inner"></span>
+                <span class="w-3.5 h-3.5 rounded-full bg-slate-800 shadow-inner"></span>
+              </div>
+            </div>
+          `;
+        } else {
+          face.innerHTML = `
+            <div class="w-full h-full grid grid-cols-2 grid-rows-3 p-2.5 gap-x-3 gap-y-1 content-between">
+              <span class="w-3.5 h-3.5 rounded-full bg-slate-800 shadow-inner justify-self-center"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-slate-800 shadow-inner justify-self-center"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-slate-800 shadow-inner justify-self-center"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-slate-800 shadow-inner justify-self-center"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-slate-800 shadow-inner justify-self-center"></span>
+              <span class="w-3.5 h-3.5 rounded-full bg-slate-800 shadow-inner justify-self-center"></span>
+            </div>
+          `;
+        }
+      }
+
+      function updateDashboard() {
+        const activePlayer = state.players.find(p => p.id === state.activePlayerId);
+        document.getElementById('activePlayerAvatar').textContent = activePlayer.avatar;
+        document.getElementById('activePlayerName').textContent = activePlayer.name;
+        document.getElementById('activePlayerName').className = `text-base font-black ${activePlayer.color === 'red' ? 'text-red-600' : 'text-blue-600'}`;
+        document.getElementById('activePlayerRole').textContent = activePlayer.isAI ? 'Lượt của Máy' : 'Lượt người chơi';
+
+        // Glow
+        const glow = document.getElementById('playerGlow');
+        glow.className = `absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl opacity-20 pointer-events-none ${activePlayer.color === 'red' ? 'bg-red-500' : 'bg-blue-500'}`;
+
+        // Dice subtext & button state
+        const btnRoll = document.getElementById('btnRollDice');
+        const subtext = document.getElementById('diceSubtext');
+
+        if (state.turnPhase === 'waiting_for_roll' && !activePlayer.isAI) {
+          btnRoll.disabled = false;
+          btnRoll.className = `mt-2.5 px-5 py-2 rounded-xl font-extrabold text-sm sm:text-base transition-all shadow-md text-white active:scale-95 cursor-pointer ${
+            activePlayer.color === 'red' ? 'bg-gradient-to-r from-red-500 to-orange-500 ring-2 ring-orange-300' : 'bg-gradient-to-r from-blue-600 to-cyan-500 ring-2 ring-blue-300'
+          }`;
+          subtext.textContent = `Lượt của ${activePlayer.name}!`;
+        } else if (activePlayer.isAI && state.turnPhase === 'waiting_for_roll') {
+          btnRoll.disabled = true;
+          btnRoll.className = 'mt-2.5 px-5 py-2 rounded-xl font-extrabold text-sm sm:text-base bg-slate-200 text-slate-400 cursor-not-allowed';
+          subtext.textContent = '🤖 Robot đang gieo...';
+        } else {
+          btnRoll.disabled = true;
+          btnRoll.className = 'mt-2.5 px-5 py-2 rounded-xl font-extrabold text-sm sm:text-base bg-slate-200 text-slate-400 cursor-not-allowed';
+          subtext.textContent = `Kết quả: ${state.diceValue} chấm`;
+        }
+
+        // Scoreboard
+        const scoreContainer = document.getElementById('scoreboardList');
+        scoreContainer.innerHTML = '';
+        state.players.forEach(p => {
+          const isAct = p.id === state.activePlayerId;
+          const div = document.createElement('div');
+          div.className = `p-2.5 rounded-xl border-2 transition-all flex items-center justify-between ${
+            isAct
+              ? p.color === 'red' ? 'bg-rose-50 border-red-400 ring-2 ring-red-200' : 'bg-blue-50 border-blue-400 ring-2 ring-blue-200'
+              : 'bg-slate-50/70 border-slate-200 opacity-80'
+          }`;
+          div.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="text-xl">${p.avatar}</span>
+              <div>
+                <div class="text-xs font-black text-slate-800 flex items-center gap-1">
+                  <span>${p.name}</span>
+                  ${p.isAI ? '<span class="text-[10px] bg-slate-200 px-1 rounded text-slate-600 font-bold">AI</span>' : ''}
+                </div>
+                <div class="text-[10px] text-slate-500 font-semibold">
+                  Đúng: <strong class="text-emerald-600">${p.correct}</strong> | Sai: <strong class="text-rose-500">${p.wrong}</strong>
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-black text-amber-900">Ô ${p.position}</div>
+              <div class="text-[10px] text-slate-500 font-bold">
+                ${p.position === 1 ? 'Xuất phát' : p.position === 20 ? 'Đã về đích!' : `Cách đích ${20 - p.position} ô`}
+              </div>
+            </div>
+          `;
+          scoreContainer.appendChild(div);
+        });
+      }
+
+      function showEventBanner(text, type = 'correct') {
+        const banner = document.getElementById('eventBanner');
+        const box = document.getElementById('eventBannerBox');
+        const textSpan = document.getElementById('eventBannerText');
+
+        textSpan.textContent = text;
+        if (type === 'ladder') {
+          box.className = 'p-3 rounded-2xl font-black text-xs sm:text-sm text-center shadow-md border-2 flex items-center justify-center gap-2 bg-amber-100 border-amber-400 text-amber-950';
+        } else if (type === 'slide') {
+          box.className = 'p-3 rounded-2xl font-black text-xs sm:text-sm text-center shadow-md border-2 flex items-center justify-center gap-2 bg-emerald-100 border-emerald-400 text-emerald-950';
+        } else if (type === 'flower') {
+          box.className = 'p-3 rounded-2xl font-black text-xs sm:text-sm text-center shadow-md border-2 flex items-center justify-center gap-2 bg-pink-100 border-pink-400 text-pink-950';
+        } else if (type === 'wrong') {
+          box.className = 'p-3 rounded-2xl font-black text-xs sm:text-sm text-center shadow-md border-2 flex items-center justify-center gap-2 bg-rose-100 border-rose-400 text-rose-950';
+        } else {
+          box.className = 'p-3 rounded-2xl font-black text-xs sm:text-sm text-center shadow-md border-2 flex items-center justify-center gap-2 bg-sky-100 border-sky-400 text-sky-950';
+        }
+
+        banner.classList.remove('hidden');
+        setTimeout(() => {
+          banner.classList.add('hidden');
+        }, 3200);
+      }
+
+      /* --- STEP-BY-STEP PAWN MOVEMENT --- */
+      function stepPawn(playerId, startPos, targetPos, callback) {
+        let currentStep = startPos;
+        const direction = targetPos > startPos ? 1 : -1;
+        const interval = setInterval(() => {
+          currentStep += direction;
+          sound.playStep();
+          const p = state.players.find(x => x.id === playerId);
+          if (p) p.position = currentStep;
+          renderBoard();
+          updateDashboard();
+
+          if (currentStep === targetPos) {
+            clearInterval(interval);
+            setTimeout(callback, 350);
+          }
+        }, 280);
+      }
+
+      /* --- DICE ROLL & GAME LIFECYCLE --- */
+      function handleRoll() {
+        if (state.turnPhase !== 'waiting_for_roll' || state.isRolling) return;
+        const activePlayer = state.players.find(p => p.id === state.activePlayerId);
+
+        state.isRolling = true;
+        state.turnPhase = 'rolling';
+        sound.playDiceRoll();
+
+        // 3D animation
+        const cube = document.getElementById('diceCube');
+        const badge = document.getElementById('rollingBadge');
+        cube.classList.add('animate-dice-roll');
+        badge.classList.remove('hidden');
+
+        const roll = Math.floor(Math.random() * 6) + 1;
+        state.diceValue = roll;
+
+        setTimeout(() => {
+          cube.classList.remove('animate-dice-roll');
+          badge.classList.add('hidden');
+          renderDice(roll);
+          state.isRolling = false;
+          state.turnPhase = 'moving';
+
+          const currentPos = activePlayer.position;
+          const targetPos = Math.min(20, currentPos + roll);
+          activePlayer.prevPosition = currentPos;
+
+          document.getElementById('statusMessage').textContent = `${activePlayer.name} gieo được ${roll} chấm! Đang tiến đến ô ${targetPos}...`;
+          updateDashboard();
+
+          stepPawn(activePlayer.id, currentPos, targetPos, () => {
+            // Arrived at target
+            const cell = BOARD_CELLS.find(c => c.id === targetPos);
+            if (!cell) {
+              endTurn();
+              return;
+            }
+
+            // 1. Finish
+            if (cell.type === 'finish' || targetPos === 20) {
+              state.turnPhase = 'game_over';
+              sound.playWin();
+              launchConfetti();
+              document.getElementById('winnerAvatar').textContent = activePlayer.avatar;
+              document.getElementById('winnerName').textContent = activePlayer.name;
+              document.getElementById('victoryModal').classList.remove('hidden');
+              document.getElementById('statusMessage').textContent = `🎉 ${activePlayer.name} đã về đích xuất sắc!`;
+              return;
+            }
+
+            // 2. Flower cell (safe!)
+            if (cell.type === 'flower') {
+              sound.playFlower();
+              showEventBanner('🌸 Gặp bông hoa cúc cười, em tự tin vượt qua an toàn!', 'flower');
+              document.getElementById('statusMessage').textContent = `${activePlayer.name} gặp Bông hoa cúc cười! Tự tin vượt qua an toàn.`;
+              setTimeout(endTurn, 2200);
+              return;
+            }
+
+            // 3. Question cell
+            if (cell.type === 'number') {
+              state.turnPhase = 'answering';
+              state.currentQuestionCell = cell;
+              openQuestionModal(cell, activePlayer);
+              return;
+            }
+
+            endTurn();
+          });
+        }, 1100);
+      }
+
+      function endTurn() {
+        state.currentQuestionCell = null;
+        state.activePlayerId = state.activePlayerId === 1 ? 2 : 1;
+        state.turnPhase = 'waiting_for_roll';
+
+        const nextP = state.players.find(p => p.id === state.activePlayerId);
+        document.getElementById('statusMessage').textContent = `Đến lượt của ${nextP.name}. Hãy gieo xúc xắc!`;
+        updateDashboard();
+        renderBoard();
+
+        // If next is AI, auto-trigger roll
+        if (nextP.isAI) {
+          setTimeout(handleRoll, 1300);
+        }
+      }
+
+      /* --- QUESTION MODAL LOGIC --- */
+      function openQuestionModal(cell, player) {
+        const qData = getCellQuestion(cell);
+        if (!qData) {
+          endTurn();
+          return;
+        }
+
+        const modal = document.getElementById('questionModal');
+        const headerBar = document.getElementById('modalHeaderBar');
+        const playerAvatar = document.getElementById('modalPlayerAvatar');
+        const playerTitle = document.getElementById('modalPlayerTitle');
+        const topicBadge = document.getElementById('modalTopicBadge');
+        const promptEl = document.getElementById('modalQuestionPrompt');
+        const optionsGrid = document.getElementById('modalOptionsGrid');
+        const aiBox = document.getElementById('aiThinkingBox');
+        const resultBox = document.getElementById('modalResultBox');
+        const btnContinue = document.getElementById('btnModalContinue');
+        const timerProgress = document.getElementById('modalTimerProgress');
+        const timerBadge = document.getElementById('modalTimerBadge');
+        const timerText = document.getElementById('modalTimerText');
+
+        modal.classList.remove('hidden');
+        headerBar.className = `p-4 text-white text-center font-extrabold flex items-center justify-between px-5 sm:px-6 ${
+          player.color === 'red' ? 'bg-gradient-to-r from-red-500 via-orange-500 to-amber-500' : 'bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-500'
+        }`;
+        playerAvatar.textContent = player.avatar;
+        playerTitle.textContent = `${player.name} • Ô ${cell.id}`;
+
+        const activeTopicObj = MATH_TOPICS.find(t => t.id === state.topic);
+        topicBadge.textContent = `${activeTopicObj ? activeTopicObj.icon : '✨'} ${activeTopicObj ? activeTopicObj.name : 'Toán Học'}`;
+        promptEl.textContent = qData.prompt;
+
+        resultBox.classList.add('hidden');
+        btnContinue.classList.add('hidden');
+        aiBox.classList.add('hidden');
+
+        // Render options
+        optionsGrid.className = `grid gap-3 my-2 ${qData.options.length === 2 ? 'grid-cols-2' : qData.options.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`;
+        optionsGrid.innerHTML = '';
+
+        let answered = false;
+
+        qData.options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'p-3.5 sm:p-4 rounded-2xl text-lg sm:text-2xl font-extrabold transition-all relative flex flex-col items-center justify-center cursor-pointer bg-amber-50/80 border-3 border-amber-300 text-slate-900 hover:bg-amber-100 hover:scale-102 hover:border-amber-400 active:scale-98 shadow-sm';
+          btn.innerHTML = `<span class="font-display tracking-wide">${opt}</span>`;
+          btn.onclick = () => {
+            if (answered || player.isAI) return;
+            handleChoice(opt);
+          };
+          optionsGrid.appendChild(btn);
+        });
+
+        // Timer
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        state.timerRemaining = state.timeLimit > 0 ? state.timeLimit : 15;
+        timerProgress.style.width = '100%';
+        timerProgress.className = 'h-full bg-emerald-500 transition-all duration-1000 linear';
+
+        if (state.timeLimit > 0 && !player.isAI) {
+          timerBadge.classList.remove('hidden');
+          timerText.textContent = `${state.timerRemaining}s`;
+
+          state.timerInterval = setInterval(() => {
+            state.timerRemaining--;
+            timerText.textContent = `${state.timerRemaining}s`;
+            const pct = (state.timerRemaining / state.timeLimit) * 100;
+            timerProgress.style.width = `${pct}%`;
+
+            if (state.timerRemaining <= 4) {
+              sound.playTick(true);
+              timerProgress.className = 'h-full bg-red-500 transition-all duration-1000 linear';
+              timerBadge.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-black shadow-xs bg-red-600 text-white animate-pulse';
+            } else {
+              sound.playTick(false);
+            }
+
+            if (state.timerRemaining <= 0) {
+              clearInterval(state.timerInterval);
+              handleChoice(null, true);
+            }
+          }, 1000);
+        } else {
+          timerBadge.classList.add('hidden');
+        }
+
+        // AI automated answer
+        if (player.isAI) {
+          aiBox.classList.remove('hidden');
+          const thinkDelay = 1600 + Math.random() * 800;
+          setTimeout(() => {
+            aiBox.classList.add('hidden');
+            const isSmart = Math.random() < 0.9;
+            const choice = isSmart ? qData.correct : (qData.options.find(o => o !== qData.correct) || qData.correct);
+            handleChoice(choice);
+          }, thinkDelay);
+        }
+
+        function handleChoice(selectedChoice, isTimeout = false) {
+          if (answered) return;
+          answered = true;
+          if (state.timerInterval) clearInterval(state.timerInterval);
+
+          const isCorrect = !isTimeout && selectedChoice === qData.correct;
+          if (isCorrect) sound.playCorrect();
+          else sound.playWrong();
+
+          // Style buttons
+          Array.from(optionsGrid.children).forEach(btn => {
+            btn.disabled = true;
+            btn.classList.remove('hover:scale-102', 'cursor-pointer');
+            const text = btn.querySelector('span').textContent.trim();
+            if (text === qData.correct) {
+              btn.className = 'p-3.5 sm:p-4 rounded-2xl text-lg sm:text-2xl font-extrabold transition-all relative flex flex-col items-center justify-center bg-emerald-100 border-3 border-emerald-500 text-emerald-950 font-black shadow-md ring-2 ring-emerald-300';
+              btn.innerHTML += `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-200/90 px-2 py-0.5 rounded-full mt-1.5">✓ Đáp án đúng</span>`;
+            } else if (text === selectedChoice && !isCorrect) {
+              btn.className = 'p-3.5 sm:p-4 rounded-2xl text-lg sm:text-2xl font-extrabold transition-all relative flex flex-col items-center justify-center bg-rose-100 border-3 border-rose-500 text-rose-950 font-bold line-through opacity-70';
+            } else {
+              btn.className = 'p-3.5 sm:p-4 rounded-2xl text-lg sm:text-2xl font-extrabold transition-all relative flex flex-col items-center justify-center bg-slate-50 border-2 border-slate-200 text-slate-400 opacity-50';
+            }
+          });
+
+          // Result box
+          resultBox.classList.remove('hidden');
+          const title = document.getElementById('modalResultTitle');
+          const expl = document.getElementById('modalExplanation');
+          const rule = document.getElementById('modalRuleConsequence');
+
+          if (isCorrect) {
+            resultBox.className = 'mt-4 p-4 rounded-2xl text-left border-2 bg-emerald-50 border-emerald-300 text-emerald-950';
+            title.innerHTML = '✨ Hoan hô! Em đã trả lời chính xác!';
+            rule.innerHTML = `<span class="text-emerald-700 font-bold">Em được giữ nguyên vị trí ở ô ${cell.id}!${cell.ladderTo ? ' Đồng thời được leo cầu thang lên ô cao hơn!' : ''}</span>`;
+          } else {
+            resultBox.className = 'mt-4 p-4 rounded-2xl text-left border-2 bg-rose-50 border-rose-300 text-rose-950';
+            title.innerHTML = isTimeout ? '⏱️ Đã hết thời gian suy nghĩ!' : '❌ Chưa chính xác rồi!';
+            rule.innerHTML = `<span class="text-rose-700 font-bold">⚠️ Theo luật: Em phải quay về ô xuất phát trước đó (Ô ${player.prevPosition})!</span>`;
+          }
+          expl.innerHTML = `<strong>Cách giải:</strong> ${qData.explanation}`;
+
+          btnContinue.classList.remove('hidden');
+          btnContinue.onclick = () => {
+            sound.playClick();
+            modal.classList.add('hidden');
+
+            if (isCorrect) {
+              player.correct++;
+              // Check ladder or slide
+              if (cell.ladderTo) {
+                const targetL = cell.ladderTo;
+                sound.playLadder();
+                showEventBanner(`🪜 Hoan hô! Em được leo thang tre lên ô ${targetL}!`, 'ladder');
+                setTimeout(() => {
+                  player.position = targetL;
+                  player.ladders++;
+                  renderBoard();
+                  updateDashboard();
+                  setTimeout(endTurn, 1500);
+                }, 1000);
+                return;
+              }
+              if (cell.slideTo) {
+                const targetS = cell.slideTo;
+                sound.playSlide();
+                showEventBanner(`🛝 Đỉnh cầu trượt! Em bị trượt xuống ô ${targetS}!`, 'slide');
+                setTimeout(() => {
+                  player.position = targetS;
+                  player.slides++;
+                  renderBoard();
+                  updateDashboard();
+                  setTimeout(endTurn, 1500);
+                }, 1000);
+                return;
+              }
+              endTurn();
+            } else {
+              player.wrong++;
+              const prev = player.prevPosition;
+              showEventBanner(`⚠️ Chưa đúng! Em phải quay về ô ${prev}!`, 'wrong');
+              setTimeout(() => {
+                stepPawn(player.id, cell.id, prev, () => {
+                  endTurn();
+                });
+              }, 1000);
+            }
+          };
+        }
+      }
+
+      /* --- GUIDE MODAL TABS CONTENT --- */
+      const GUIDE_TABS = [
+        {
+          id: 'decimal_compare', title: 'Số thập phân', icon: '🔢',
+          content: `
+            <div class="space-y-3">
+              <div class="bg-amber-50/90 border-2 border-amber-200 rounded-2xl p-3.5">
+                <div class="font-black text-amber-900 text-sm mb-1">1. So sánh PHẦN NGUYÊN trước</div>
+                <p class="text-slate-600">Số thập phân nào có phần nguyên lớn hơn thì số đó lớn hơn.</p>
+                <div class="mt-2 bg-white p-2 rounded-xl border border-amber-200 font-bold text-amber-950">Ví dụ: <strong>41,72 > 31,27</strong> (vì 41 > 31)</div>
+              </div>
+              <div class="bg-blue-50/90 border-2 border-blue-200 rounded-2xl p-3.5">
+                <div class="font-black text-blue-900 text-sm mb-1">2. Khi phần nguyên bằng nhau: So sánh PHẦN MƯỜI</div>
+                <p class="text-slate-600">Chữ số hàng phần mười nào lớn hơn thì lớn hơn.</p>
+                <div class="mt-2 bg-white p-2 rounded-xl border border-blue-200 font-bold text-blue-950">Ví dụ: <strong>3,81 > 3,74</strong> (vì 3 = 3, 8 > 7)</div>
+              </div>
+              <div class="bg-emerald-50/90 border-2 border-emerald-200 rounded-2xl p-3.5">
+                <div class="font-black text-emerald-900 text-sm mb-1">3. Khi phần mười bằng nhau: So sánh PHẦN TRĂM</div>
+                <div class="mt-2 bg-white p-2 rounded-xl border border-emerald-200 font-bold text-emerald-950">Ví dụ: <strong>35,09 > 35,08</strong> (vì 9 > 8)</div>
+              </div>
+            </div>
+          `
+        },
+        {
+          id: 'fraction_vs_decimal', title: 'Phân số & Thập phân', icon: '⚖️',
+          content: `
+            <div class="space-y-3">
+              <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-3.5">
+                <div class="font-black text-indigo-900 text-sm mb-1">Bí quyết: Đổi phân số thành số thập phân</div>
+                <p class="text-slate-600">Lấy tử số chia cho mẫu số rồi so sánh 2 số thập phân!</p>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                <div class="p-2 bg-amber-50 rounded-xl border border-amber-200">• <strong>1/2</strong> = 0,5</div>
+                <div class="p-2 bg-amber-50 rounded-xl border border-amber-200">• <strong>1/4</strong> = 0,25</div>
+                <div class="p-2 bg-amber-50 rounded-xl border border-amber-200">• <strong>3/4</strong> = 0,75</div>
+                <div class="p-2 bg-amber-50 rounded-xl border border-amber-200">• <strong>1/5</strong> = 0,2</div>
+                <div class="p-2 bg-amber-50 rounded-xl border border-amber-200">• <strong>2/5</strong> = 0,4</div>
+                <div class="p-2 bg-amber-50 rounded-xl border border-amber-200">• <strong>4/5</strong> = 0,8</div>
+              </div>
+            </div>
+          `
+        },
+        {
+          id: 'unit_conversion', title: 'Đổi đơn vị đo', icon: '📏',
+          content: `
+            <div class="space-y-3">
+              <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-3.5">
+                <div class="font-black text-emerald-900 text-sm mb-1">Đơn vị diện tích (Gấp nhau 100 lần)</div>
+                <div class="text-xs space-y-1 mt-1 font-semibold">
+                  <div>• <strong>1 m² = 100 dm² = 10 000 cm²</strong></div>
+                  <div>• <strong>1 ha = 10 000 m²</strong> (0,5 ha = 5 000 m²)</div>
+                  <div>• <strong>1 km² = 100 ha = 1 000 000 m²</strong></div>
+                </div>
+              </div>
+              <div class="bg-cyan-50 border-2 border-cyan-200 rounded-2xl p-3.5">
+                <div class="font-black text-cyan-900 text-sm mb-1">Độ dài & khối lượng</div>
+                <div class="text-xs space-y-1 mt-1 font-semibold">
+                  <div>• 1 km = 1000m (50m = 0,05km &rarr; 2km 50m = 2,05 km)</div>
+                  <div>• 1 tấn = 1000kg (50kg = 0,05 tấn &rarr; 8 tấn 50kg = 8,05 tấn)</div>
+                </div>
+              </div>
+            </div>
+          `
+        },
+        {
+          id: 'rounding', title: 'Làm tròn số', icon: '🎯',
+          content: `
+            <div class="space-y-3">
+              <div class="bg-violet-50 border-2 border-violet-200 rounded-2xl p-3.5">
+                <div class="font-black text-violet-900 text-sm mb-1">Quy tắc vàng làm tròn số:</div>
+                <p class="text-xs">• <strong>Nhỏ hơn 5 (0, 1, 2, 3, 4):</strong> Làm tròn xuống (giữ nguyên).</p>
+                <p class="text-xs mt-1">• <strong>Từ 5 trở lên (5, 6, 7, 8, 9):</strong> Làm tròn lên (cộng thêm 1).</p>
+              </div>
+              <div class="bg-white border-2 border-slate-200 rounded-2xl p-3 text-xs space-y-1 font-medium">
+                <div>• <strong>34,76</strong> làm tròn đến số tự nhiên &rarr; <strong>35</strong></div>
+                <div>• <strong>12,34</strong> làm tròn đến hàng phần mười &rarr; <strong>12,3</strong></div>
+                <div>• <strong>85,2</strong> làm tròn đến hàng chục &rarr; <strong>90</strong></div>
+              </div>
+            </div>
+          `
+        },
+        {
+          id: 'fraction_arithmetic', title: 'Phép tính phân số', icon: '🧮',
+          content: `
+            <div class="space-y-3">
+              <div class="bg-orange-50 border-2 border-orange-200 rounded-2xl p-3.5">
+                <div class="font-black text-orange-900 text-sm mb-1">Cộng, trừ phân số khác mẫu</div>
+                <p class="text-xs text-slate-600">Quy đồng mẫu số chung rồi cộng hoặc trừ các tử số với nhau, giữ nguyên mẫu.</p>
+                <div class="mt-2 bg-white p-2 rounded-xl border border-orange-200 font-bold text-xs text-orange-950">Ví dụ: 1/3 + 2/5 = 5/15 + 6/15 = 11/15.</div>
+              </div>
+              <div class="bg-rose-50 border-2 border-rose-200 rounded-2xl p-3.5">
+                <div class="font-black text-rose-900 text-sm mb-1">Nhân hai phân số</div>
+                <p class="text-xs text-slate-600">Lấy tử nhân tử, mẫu nhân mẫu: 2/3 × 4/5 = 8/15.</p>
+              </div>
+            </div>
+          `
+        }
+      ];
+
+      function renderGuide(tabId) {
+        const nav = document.getElementById('guideTabsNav');
+        const content = document.getElementById('guideTabContent');
+        nav.innerHTML = '';
+
+        GUIDE_TABS.forEach(t => {
+          const isAct = t.id === tabId;
+          const btn = document.createElement('button');
+          btn.className = `px-3 py-2 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${
+            isAct ? 'bg-white text-amber-950 border-t-2 border-x border-amber-300 font-black shadow-xs' : 'text-slate-600 hover:text-amber-900 hover:bg-amber-100/60'
+          }`;
+          btn.innerHTML = `<span>${t.icon}</span><span>${t.title}</span>`;
+          btn.onclick = () => renderGuide(t.id);
+          nav.appendChild(btn);
+        });
+
+        const activeT = GUIDE_TABS.find(t => t.id === tabId) || GUIDE_TABS[0];
+        content.innerHTML = activeT.content;
+      }
+
+      /* --- EVENT LISTENERS --- */
+      document.getElementById('btnRollDice').onclick = () => {
+        sound.playClick();
+        handleRoll();
+      };
+      document.getElementById('diceCube').onclick = () => {
+        sound.playClick();
+        handleRoll();
+      };
+
+      // Spacebar
+      window.addEventListener('keydown', e => {
+        if (e.code === 'Space' && state.turnPhase === 'waiting_for_roll' && !state.players.find(p => p.id === state.activePlayerId).isAI) {
+          e.preventDefault();
+          handleRoll();
+        }
+      });
+
+      // Sound toggle
+      document.getElementById('btnToggleSound').onclick = () => {
+        state.soundEnabled = !state.soundEnabled;
+        sound.enabled = state.soundEnabled;
+        document.getElementById('soundIcon').textContent = state.soundEnabled ? '🔊' : '🔇';
+        document.getElementById('soundText').textContent = state.soundEnabled ? 'Bật' : 'Tắt';
+        sound.playClick();
+      };
+
+      // Reset
+      document.getElementById('btnResetGame').onclick = resetGame;
+      document.getElementById('btnRematch').onclick = () => {
+        document.getElementById('victoryModal').classList.add('hidden');
+        resetGame();
+      };
+
+      function resetGame() {
+        state.players.forEach(p => {
+          p.position = 1;
+          p.prevPosition = 1;
+          p.correct = 0;
+          p.wrong = 0;
+          p.ladders = 0;
+          p.slides = 0;
+        });
+        state.activePlayerId = 1;
+        state.turnPhase = 'waiting_for_roll';
+        renderBoard();
+        updateDashboard();
+        showEventBanner('🔄 Ván mới đã sẵn sàng! Gieo xúc xắc nào!');
+        sound.playClick();
+      }
+
+      // Mode toggle
+      document.getElementById('btnModeSingle').onclick = () => {
+        sound.playClick();
+        state.mode = 'single';
+        state.players = [
+          { id: 1, name: 'Bé Thông Thái', isAI: false, avatar: '🧒', color: 'red', position: 1, prevPosition: 1, correct: 0, wrong: 0, ladders: 0, slides: 0 },
+          { id: 2, name: 'Robot Bé Bi', isAI: true, avatar: '🤖', color: 'blue', position: 1, prevPosition: 1, correct: 0, wrong: 0, ladders: 0, slides: 0 }
+        ];
+        document.getElementById('btnModeSingle').className = 'p-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all bg-amber-500 text-white shadow-sm ring-2 ring-amber-300';
+        document.getElementById('btnModeTwo').className = 'p-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all bg-blue-50 text-slate-700 hover:bg-blue-100 border border-blue-200';
+        resetGame();
+      };
+
+      document.getElementById('btnModeTwo').onclick = () => {
+        sound.playClick();
+        state.mode = 'two_players';
+        state.players = [
+          { id: 1, name: 'Người chơi 1 (Đỏ)', isAI: false, avatar: '🧒', color: 'red', position: 1, prevPosition: 1, correct: 0, wrong: 0, ladders: 0, slides: 0 },
+          { id: 2, name: 'Người chơi 2 (Xanh)', isAI: false, avatar: '👧', color: 'blue', position: 1, prevPosition: 1, correct: 0, wrong: 0, ladders: 0, slides: 0 }
+        ];
+        document.getElementById('btnModeTwo').className = 'p-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all bg-blue-600 text-white shadow-sm ring-2 ring-blue-300';
+        document.getElementById('btnModeSingle').className = 'p-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all bg-amber-50 text-slate-700 hover:bg-amber-100 border border-amber-200';
+        resetGame();
+      };
+
+      // Timer option buttons
+      document.querySelectorAll('#timerOptionButtons button').forEach(btn => {
+        btn.onclick = () => {
+          sound.playClick();
+          const t = parseInt(btn.getAttribute('data-time'), 10);
+          state.timeLimit = t;
+          document.querySelectorAll('#timerOptionButtons button').forEach(b => {
+            b.className = 'py-1 rounded-lg text-center bg-slate-100 hover:bg-amber-100 text-slate-700';
+          });
+          btn.className = 'py-1 rounded-lg text-center bg-amber-600 text-white font-black shadow-xs';
+          document.getElementById('timeLimitLabel').textContent = t === 0 ? 'Không giới hạn' : `${t} giây`;
+        };
+      });
+
+      // Guide Modal
+      document.getElementById('btnOpenGuide').onclick = () => {
+        sound.playClick();
+        renderGuide(state.topic === 'mixed' ? 'decimal_compare' : state.topic);
+        document.getElementById('guideModal').classList.remove('hidden');
+      };
+      document.getElementById('btnCloseGuide').onclick = () => {
+        sound.playClick();
+        document.getElementById('guideModal').classList.add('hidden');
+      };
+      document.getElementById('btnCloseGuideBottom').onclick = () => {
+        sound.playClick();
+        document.getElementById('guideModal').classList.add('hidden');
+      };
+
+      /* --- INITIALIZATION --- */
+      renderTopicButtons();
+      renderBoard();
+      renderDice(1);
+      updateDashboard();
+    </script>
+  </body>
+</html>
